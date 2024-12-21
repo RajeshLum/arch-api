@@ -5,7 +5,7 @@ from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from data.models import Person, SanctionedEntity
+from data.models import SanctionedEntity
 
 
 class Command(BaseCommand):
@@ -24,6 +24,7 @@ class Command(BaseCommand):
                         try:
                             # Load the JSON object from the line
                             data = json.loads(line.strip())
+                            print(f"On line no: {line_number}")
 
                             # Extract common fields for SanctionedEntity
                             sanctioned_entity_data = {
@@ -50,7 +51,7 @@ class Command(BaseCommand):
                             ModelClass = apps.get_model(model_path)
                             model_data = data.get("properties", {})
                             ModelClass.objects.update_or_create(
-                                entity=sanctioned_entity,
+                                sanctionEntity=sanctioned_entity,
                                 defaults=model_data,
                             )
 

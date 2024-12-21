@@ -3,7 +3,6 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
-
 class DataDownloader:
     """
     A class to handle the downloading of files from the OpenSanctions website.
@@ -89,7 +88,7 @@ class DataDownloader:
 
 
 BASE_URL = "https://www.opensanctions.org/datasets/sanctions/"
-DOWNLOAD_DIR = "/var/www/ArchAngel-datalake/downloader/raw-data/"
+DOWNLOAD_DIR = "/var/www/ArchAngel-datalake/data/raw-data/"
 
 # Ensure the download directory exists
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)

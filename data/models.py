@@ -20,7 +20,7 @@ class SanctionedEntity(models.Model):
 
 
 class Person(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -108,12 +108,12 @@ class Person(models.Model):
 
 
 class Sanction(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
     )
-
+    entity = models.JSONField(blank=True, null=True)
     startDate = models.JSONField(blank=True, null=True)
     endDate = models.JSONField(blank=True, null=True)
     date = models.JSONField(blank=True, null=True)
@@ -145,7 +145,7 @@ class Sanction(models.Model):
 
 
 class Family(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -173,7 +173,7 @@ class Family(models.Model):
 
 
 class CryptoWallet(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -203,7 +203,7 @@ class CryptoWallet(models.Model):
     amountUsd = models.JSONField(blank=True, null=True)
 
     publicKey = models.JSONField(blank=True, null=True)
-    managingExchange = models.JSONField(blank=True, null=True)
+    mangingExchange = models.JSONField(blank=True, null=True)
     holder = models.JSONField(blank=True, null=True)
     balance = models.JSONField(blank=True, null=True)
 
@@ -215,7 +215,7 @@ class CryptoWallet(models.Model):
 
 
 class Succession(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -245,7 +245,7 @@ class Succession(models.Model):
 
 
 class Company(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -322,7 +322,7 @@ class Company(models.Model):
 
 
 class Ownership(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -356,7 +356,7 @@ class Ownership(models.Model):
 
 
 class Vessel(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -407,7 +407,7 @@ class Vessel(models.Model):
 
 
 class Position(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -444,7 +444,7 @@ class Position(models.Model):
 
 
 class Asset(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -481,7 +481,7 @@ class Asset(models.Model):
 
 
 class Associate(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -509,7 +509,7 @@ class Associate(models.Model):
 
 
 class Identification(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -526,7 +526,7 @@ class Identification(models.Model):
     modifiedAt = models.JSONField(blank=True, null=True)
 
     holder = models.JSONField(blank=True, null=True)
-    identificationType = models.JSONField(blank=True, null=True)
+    type = models.JSONField(blank=True, null=True)
     country = models.JSONField(blank=True, null=True)
     number = models.JSONField(blank=True, null=True)
     authority = models.JSONField(blank=True, null=True)
@@ -539,7 +539,7 @@ class Identification(models.Model):
 
 
 class Organization(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -604,7 +604,7 @@ class Organization(models.Model):
 
 
 class Airplane(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -648,7 +648,7 @@ class Airplane(models.Model):
 
 
 class PublicBody(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -713,7 +713,7 @@ class PublicBody(models.Model):
 
 
 class Employment(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -733,7 +733,7 @@ class Employment(models.Model):
 
 
 class Payment(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     payer = models.JSONField(blank=True, null=True)
@@ -763,7 +763,7 @@ class Payment(models.Model):
 
 
 class Address(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     name = models.JSONField(blank=True, null=True)
@@ -805,7 +805,7 @@ class Address(models.Model):
 
 
 class Debt(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     debtor = models.JSONField(blank=True, null=True)
@@ -835,7 +835,7 @@ class Debt(models.Model):
 
 
 class UnknownLink(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     subject = models.JSONField(blank=True, null=True)
@@ -864,7 +864,7 @@ class UnknownLink(models.Model):
 
 
 class Passport(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     holder = models.JSONField(blank=True, null=True)
@@ -894,7 +894,7 @@ class Passport(models.Model):
 
 
 class Representation(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity, on_delete=models.CASCADE, primary_key=True
     )
     agent = models.JSONField(blank=True, null=True)
@@ -923,7 +923,7 @@ class Representation(models.Model):
 
 
 class Occupancy(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -953,7 +953,7 @@ class Occupancy(models.Model):
 
 
 class Membership(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -984,7 +984,7 @@ class Membership(models.Model):
 
 
 class Directorship(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1015,7 +1015,7 @@ class Directorship(models.Model):
 
 
 class LegalEntity(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1077,7 +1077,7 @@ class LegalEntity(models.Model):
 
 
 class Security(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         primary_key=True,
         on_delete=models.CASCADE,
@@ -1121,7 +1121,7 @@ class Security(models.Model):
 
 
 class Interval(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1144,7 +1144,7 @@ class Interval(models.Model):
 
 
 class Thing(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1176,7 +1176,7 @@ class Thing(models.Model):
 
 
 class Value(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1193,7 +1193,7 @@ class Value(models.Model):
 
 
 class Interest(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
@@ -1218,7 +1218,7 @@ class Interest(models.Model):
 
 
 class Vehicle(models.Model):
-    entity = models.OneToOneField(
+    sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
         primary_key=True,
