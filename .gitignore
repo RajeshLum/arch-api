@@ -2,4 +2,4 @@ myenv
 .env 
 raw-data
 db.sqlite3
-__pyacache__
+__pycache__/
