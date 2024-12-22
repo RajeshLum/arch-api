@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
                             # Extract common fields for SanctionedEntity
                             sanctioned_entity_data = {
-                                "id": data.get("id"),
+                                "sanctionId": data.get("id"),
                                 "caption": data.get("caption"),
                                 "schema": data.get("schema"),
                                 "referents": data.get("referents"),
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                             # Create or update SanctionedEntity
                             sanctioned_entity, _ = (
                                 SanctionedEntity.objects.update_or_create(
-                                    id=sanctioned_entity_data["id"],
+                                    sanctionId=sanctioned_entity_data["sanctionId"],
                                     defaults=sanctioned_entity_data,
                                 )
                             )
