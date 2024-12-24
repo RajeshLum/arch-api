@@ -7,11 +7,29 @@ from django.db import transaction
 
 from data.models import SanctionedEntity
 
+from ...script.download import DataDownloader
+
 
 class Command(BaseCommand):
     help = "Populate the database from a JSON file with newline-separated JSON objects"
 
     def handle(self, *args, **kwargs):
+        self.stdout.write("Pulling latest data from the source")
+
+        BASE_URL = "https://www.opensanctions.org/datasets/sanctions/"
+        DOWNLOAD_DIR = "data/raw-data/"
+
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+        # DataDownloader instance and download the file
+        downloader = DataDownloader(BASE_URL, DOWNLOAD_DIR)
+        downloader.download_data("entities.ftm.json")
+        downloader.download_data("names.txt")
+        downloader.download_data("senzing.json")
+        downloader.download_data("targets.nested.json")
+        downloader.download_data("targets.simple.csv")
+        self.stdout.write("Download Complete")
+
         file_path = "data/raw-data/entities.ftm.json"
 
         if not os.path.exists(file_path):
@@ -24,7 +42,7 @@ class Command(BaseCommand):
                         try:
                             # Load the JSON object from the line
                             data = json.loads(line.strip())
-                            print(f"On line no: {line_number}")
+                            self.stdout.write(f"On line no: {line_number}")
 
                             # Extract common fields for SanctionedEntity
                             sanctioned_entity_data = {

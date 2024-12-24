@@ -3,3 +3,4 @@ myenv
 raw-data
 db.sqlite3
 __pycache__/
+logs/

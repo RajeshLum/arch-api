@@ -3,6 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
+
 class DataDownloader:
     """
     A class to handle the downloading of files from the OpenSanctions website.
@@ -82,21 +83,21 @@ class DataDownloader:
             print(f"No links found containing '{file_name}'.")
             return
 
-        print(f"Downloading from: {file_url}")
+        print(f"Downloading {file_name}")
         save_path = os.path.join(self.download_dir, file_name)
         self.download_file(file_url, save_path)
 
 
-BASE_URL = "https://www.opensanctions.org/datasets/sanctions/"
-DOWNLOAD_DIR = "/var/www/ArchAngel-datalake/data/raw-data/"
+# BASE_URL = "https://www.opensanctions.org/datasets/sanctions/"
+# DOWNLOAD_DIR = "data/raw-data/"
 
-# Ensure the download directory exists
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+# # Ensure the download directory exists
+# os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Create a DataDownloader instance and download the file
-downloader = DataDownloader(BASE_URL, DOWNLOAD_DIR)
-downloader.download_data("entities.ftm.json")
-downloader.download_data("names.txt")
-downloader.download_data("senzing.json")
-downloader.download_data("targets.nested.json")
-downloader.download_data("targets.simple.csv")
+# # Create a DataDownloader instance and download the file
+# downloader = DataDownloader(BASE_URL, DOWNLOAD_DIR)
+# downloader.download_data("entities.ftm.json")
+# downloader.download_data("names.txt")
+# downloader.download_data("senzing.json")
+# downloader.download_data("targets.nested.json")
+# downloader.download_data("targets.simple.csv")
