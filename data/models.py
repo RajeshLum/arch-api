@@ -2,9 +2,9 @@ from django.db import models
 
 
 class SanctionedEntity(models.Model):
-    sanctionId = models.CharField(max_length=255, unique=True)
-    caption = models.CharField(max_length=255)
-    schema = models.CharField(max_length=50)
+    sanctionId = models.TextField(unique=True)
+    caption = models.TextField(blank=True, null=True)
+    schema = models.TextField(blank=True, null=True)
     referents = models.JSONField(blank=True, null=True)
     datasets = models.JSONField(blank=True, null=True)
     first_seen = models.DateTimeField(blank=True, null=True)
@@ -117,7 +117,7 @@ class Sanction(models.Model):
     date = models.JSONField(blank=True, null=True)
     summary = models.JSONField(blank=True, null=True)
     description = models.JSONField(blank=True, null=True)
-    recordId = models.CharField(max_length=1024, blank=True, null=True)
+    recordId = models.TextField(blank=True, null=True)
     sourceUrl = models.JSONField(blank=True, null=True)
     publisher = models.JSONField(blank=True, null=True)
     modifiedAt = models.JSONField(blank=True, null=True)
