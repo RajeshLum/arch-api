@@ -1,0 +1,10 @@
+To get inside the archangel_web container:
+
+docker exec -it archangel_web bash
+
+Build and start the container
+
+docker-compose up --build
+
+
+
