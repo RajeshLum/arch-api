@@ -58,12 +58,19 @@ class Command(BaseCommand):
                             }
 
                             # Create or update SanctionedEntity
-                            sanctioned_entity, _ = (
+                            sanctioned_entity, created = (
                                 SanctionedEntity.objects.update_or_create(
                                     sanctionId=sanctioned_entity_data["sanctionId"],
                                     defaults=sanctioned_entity_data,
                                 )
                             )
+
+                            if created:
+                                self.stdout.write(f"Writing new row {line_number}")
+                            else:
+                                self.stdout.write(
+                                    f"Skipping: Data already exists for row {line_number}"
+                                )
 
                             model_path = f"data.{data.get('schema')}"
                             ModelClass = apps.get_model(model_path)
