@@ -20,4 +20,4 @@ COPY .env /app/.env
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "cron && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "cron -f & python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
