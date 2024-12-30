@@ -103,7 +103,7 @@ class Person(models.Model):
         return f"{self.name[0]}".strip()
 
     class Meta:
-        verbose_name_plural = "People"
+        verbose_name_plural = "Person"
 
 
 class Sanction(models.Model):
