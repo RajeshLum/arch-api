@@ -54,17 +54,10 @@ class PersonAdmin(ModelAdmin):
         "sanctionEntity",
         "name",
         "country",
-        # "birthDate",
         "gender",
         "nationality",
     )
-    list_filter = (
-        PersonGenderFilter,
-        # "birthCountry",
-        # "status",
-        # "nationality",
-        # "mainCountry",
-    )
+    list_filter = (PersonGenderFilter,)
     search_fields = (
         "sanctionEntity__sanctionId",
         "name",
@@ -168,3 +161,147 @@ class PersonAdmin(ModelAdmin):
             json_field_query = Q(name__icontains=search_term)
             queryset |= self.model.objects.filter(json_field_query)
         return queryset, use_distinct
+
+
+@admin.register(Sanction)
+class SanctionAdmin(ModelAdmin):
+    list_display = ("sanctionEntity", "entity", "startDate", "endDate", "country")
+    search_fields = (
+        "entity",
+        "recordId",
+        "sourceUrl",
+        "authority",
+        "unscId",
+        "program",
+    )
+    ordering = ("-modifiedAt",)
+    readonly_fields = ("sanctionEntity", "modifiedAt")
+    fieldsets = (
+        ("Sanctioned Entity", {"fields": ("sanctionEntity",)}),
+        (
+            "Dates and Status",
+            {"fields": ("startDate", "endDate", "date", "status", "listingDate")},
+        ),
+        (
+            "Details",
+            {
+                "fields": (
+                    "entity",
+                    "summary",
+                    "description",
+                    "recordId",
+                    "sourceUrl",
+                    "publisher",
+                    "authority",
+                    "authorityId",
+                    "unscId",
+                    "program",
+                    "programId",
+                    "programUrl",
+                    "provisions",
+                    "duration",
+                    "reason",
+                    "country",
+                )
+            },
+        ),
+        ("Audit", {"fields": ("modifiedAt",)}),
+    )
+
+
+@admin.register(Family)
+class FamilyAdmin(ModelAdmin):
+    list_display = ("sanctionEntity", "person", "relative")
+    search_fields = ("person", "relative", "relationship", "summary", "recordId")
+    ordering = ("-modifiedAt",)
+    readonly_fields = ("sanctionEntity", "modifiedAt")
+    fieldsets = (
+        ("Sanctioned Entity", {"fields": ("sanctionEntity",)}),
+        (
+            "Dates",
+            {"fields": ("startDate", "endDate", "date")},
+        ),
+        (
+            "Relationship Details",
+            {"fields": ("person", "relative", "relationship")},
+        ),
+        (
+            "Additional Information",
+            {
+                "fields": (
+                    "summary",
+                    "description",
+                    "recordId",
+                    "sourceUrl",
+                    "publisher",
+                )
+            },
+        ),
+        ("Audit", {"fields": ("modifiedAt",)}),
+    )
+
+
+@admin.register(CryptoWallet)
+class CryptoWalletAdmin(ModelAdmin):
+    list_display = ("sanctionEntity", "currency", "holder", "publicKey")
+    search_fields = (
+        "name",
+        "alias",
+        "previousName",
+        "sourceUrl",
+        "address",
+        "publicKey",
+        "holder",
+    )
+    ordering = ("-createdAt",)
+    readonly_fields = ("sanctionEntity", "createdAt", "modifiedAt")
+    fieldsets = (
+        ("Sanctioned Entity", {"fields": ("sanctionEntity",)}),
+        (
+            "Basic Information",
+            {
+                "fields": (
+                    "name",
+                    "summary",
+                    "description",
+                    "country",
+                    "alias",
+                    "previousName",
+                    "weakAlias",
+                    "address",
+                    "addressEntity",
+                )
+            },
+        ),
+        (
+            "Financial Details",
+            {
+                "fields": (
+                    "amount",
+                    "currency",
+                    "amountUsd",
+                    "balance",
+                    "mangingExchange",
+                    "holder",
+                )
+            },
+        ),
+        (
+            "Technical Details",
+            {
+                "fields": (
+                    "publicKey",
+                    "program",
+                    "notes",
+                    "wikidataId",
+                    "keywords",
+                    "topics",
+                )
+            },
+        ),
+        (
+            "References",
+            {"fields": ("sourceUrl", "publisher")},
+        ),
+        ("Audit", {"fields": ("createdAt", "modifiedAt")}),
+    )
