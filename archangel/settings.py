@@ -1,6 +1,9 @@
 from pathlib import Path
 
 from decouple import config
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("DJANGO_SECRET_KEY")
@@ -106,3 +109,137 @@ INTERNAL_IPS = [
     "103.160.107.11",
     "0.0.0.0",
 ]
+
+
+UNFOLD = {
+    "SITE_TITLE": "Arch Angel Data Lake",
+    "SITE_HEADER": "Arch Angel",
+    "SITE_SYMBOL": "speed",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    # "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
+    "COLORS": {
+        "font": {
+            "subtle-light": "107 114 128",
+            "subtle-dark": "156 163 175",
+            "default-light": "75 85 99",
+            "default-dark": "209 213 219",
+            "important-light": "17 24 39",
+            "important-dark": "243 244 246",
+        },
+        "primary": {
+            "50": "250 245 255",
+            "100": "243 232 255",
+            "200": "233 213 255",
+            "300": "216 180 254",
+            "400": "192 132 252",
+            "500": "168 85 247",
+            "600": "147 51 234",
+            "700": "126 34 206",
+            "800": "107 33 168",
+            "900": "88 28 135",
+            "950": "59 7 100",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": False,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "items": [
+                    {
+                        "title": _("Dashboard"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                ],
+            },
+            {
+                "title": "Authentication and Authorization",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "account_circle",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                        "permission": lambda request: request.user.has_perm(
+                            "auth.view_user"
+                        ),
+                    },
+                    {
+                        "title": "Groups",
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                        "permission": lambda request: request.user.has_perm(
+                            "auth.view_group"
+                        ),
+                    },
+                ],
+            },
+            {
+                "title": "Data",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Sanctioned Entities",
+                        "icon": "stacks",
+                        "link": reverse_lazy("admin:data_sanctionedentity_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Data Category",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Person",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:data_person_changelist"),
+                    },
+                    {
+                        "title": "Family",
+                        "icon": "family_restroom",
+                        "link": reverse_lazy("admin:data_family_changelist"),
+                    },
+                    {
+                        "title": "Sanction",
+                        "icon": "crossword",
+                        "link": reverse_lazy("admin:data_sanction_changelist"),
+                    },
+                    {
+                        "title": "Crypto Wallet",
+                        "icon": "account_balance_wallet",
+                        "link": reverse_lazy("admin:data_cryptowallet_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+    # "TABS": [
+    #     {
+    #         "models": [
+    #             "app_label.model_name_in_lowercase",
+    #         ],
+    #         "items": [
+    #             {
+    #                 "title": _("Your custom title"),
+    #                 "link": reverse_lazy("admin:app_label_model_name_changelist"),
+    #                 "permission": "sample_app.permission_callback",
+    #             },
+    #         ],
+    #     },
+    # ],
+}
+
+
+# def dashboard_callback(request, context):
+#     """
+#     Callback to prepare custom variables for index template which is used as dashboard
+#     template. It can be overridden in application by creating custom admin/index.html.
+#     """
+#     context.update(
+#         {
+#             "sample": "example",  # this will be injected into templates/admin/index.html
+#         }
+#     )
+#     return context

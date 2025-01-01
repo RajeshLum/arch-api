@@ -211,7 +211,7 @@ class SanctionAdmin(ModelAdmin):
 
 @admin.register(Family)
 class FamilyAdmin(ModelAdmin):
-    list_display = ("sanctionEntity", "person", "relative")
+    list_display = ("sanctionEntity__sanctionId", "person", "relative")
     search_fields = ("person", "relative", "relationship", "summary", "recordId")
     ordering = ("-modifiedAt",)
     readonly_fields = ("sanctionEntity", "modifiedAt")
