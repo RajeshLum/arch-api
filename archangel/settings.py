@@ -211,6 +211,36 @@ UNFOLD = {
                         "icon": "account_balance_wallet",
                         "link": reverse_lazy("admin:data_cryptowallet_changelist"),
                     },
+                    {
+                        "title": "Succession",
+                        "icon": "package",
+                        "link": reverse_lazy("admin:data_succession_changelist"),
+                    },
+                    {
+                        "title": "Company",
+                        "icon": "apartment",
+                        "link": reverse_lazy("admin:data_company_changelist"),
+                    },
+                    {
+                        "title": "Ownership",
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:data_ownership_changelist"),
+                    },
+                    {
+                        "title": "Vessel",
+                        "icon": "directions_boat",
+                        "link": reverse_lazy("admin:data_vessel_changelist"),
+                    },
+                    {
+                        "title": "Position",
+                        "icon": "mountain_flag",
+                        "link": reverse_lazy("admin:data_position_changelist"),
+                    },
+                    {
+                        "title": "Asset",
+                        "icon": "factory",
+                        "link": reverse_lazy("admin:data_asset_changelist"),
+                    },
                 ],
             },
         ],
