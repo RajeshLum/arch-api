@@ -241,6 +241,116 @@ UNFOLD = {
                         "icon": "factory",
                         "link": reverse_lazy("admin:data_asset_changelist"),
                     },
+                    {
+                        "title": "Associate",
+                        "icon": "hub",
+                        "link": reverse_lazy("admin:data_associate_changelist"),
+                    },
+                    {
+                        "title": "Identification",
+                        "icon": "fingerprint",
+                        "link": reverse_lazy("admin:data_identification_changelist"),
+                    },
+                    {
+                        "title": "Organization",
+                        "icon": "corporate_fare",
+                        "link": reverse_lazy("admin:data_organization_changelist"),
+                    },
+                    {
+                        "title": "Airplane",
+                        "icon": "flight",
+                        "link": reverse_lazy("admin:data_airplane_changelist"),
+                    },
+                    {
+                        "title": "Public Body",
+                        "icon": "public",
+                        "link": reverse_lazy("admin:data_publicbody_changelist"),
+                    },
+                    {
+                        "title": "Employment",
+                        "icon": "handshake",
+                        "link": reverse_lazy("admin:data_employment_changelist"),
+                    },
+                    {
+                        "title": "Payment",
+                        "icon": "attach_money",
+                        "link": reverse_lazy("admin:data_payment_changelist"),
+                    },
+                    {
+                        "title": "Address",
+                        "icon": "location_on",
+                        "link": reverse_lazy("admin:data_address_changelist"),
+                    },
+                    {
+                        "title": "Debt",
+                        "icon": "payments",
+                        "link": reverse_lazy("admin:data_debt_changelist"),
+                    },
+                    {
+                        "title": "Unknown Link",
+                        "icon": "link",
+                        "link": reverse_lazy("admin:data_unknownlink_changelist"),
+                    },
+                    {
+                        "title": "Passport",
+                        "icon": "id_card",
+                        "link": reverse_lazy("admin:data_passport_changelist"),
+                    },
+                    {
+                        "title": "Representation",
+                        "icon": "language_japanese_kana",
+                        "link": reverse_lazy("admin:data_representation_changelist"),
+                    },
+                    {
+                        "title": "Occupancy",
+                        "icon": "sensor_occupied",
+                        "link": reverse_lazy("admin:data_occupancy_changelist"),
+                    },
+                    {
+                        "title": "Membership",
+                        "icon": "person_add",
+                        "link": reverse_lazy("admin:data_membership_changelist"),
+                    },
+                    {
+                        "title": "Directorship",
+                        "icon": "event_seat",
+                        "link": reverse_lazy("admin:data_directorship_changelist"),
+                    },
+                    {
+                        "title": "Legal Entity",
+                        "icon": "gavel",
+                        "link": reverse_lazy("admin:data_legalentity_changelist"),
+                    },
+                    {
+                        "title": "Security",
+                        "icon": "lock",
+                        "link": reverse_lazy("admin:data_security_changelist"),
+                    },
+                    {
+                        "title": "Interval",
+                        "icon": "schedule",
+                        "link": reverse_lazy("admin:data_interval_changelist"),
+                    },
+                    {
+                        "title": "Thing",
+                        "icon": "deployed_code",
+                        "link": reverse_lazy("admin:data_thing_changelist"),
+                    },
+                    {
+                        "title": "Value",
+                        "icon": "sell",
+                        "link": reverse_lazy("admin:data_value_changelist"),
+                    },
+                    {
+                        "title": "Interest",
+                        "icon": "interests",
+                        "link": reverse_lazy("admin:data_interest_changelist"),
+                    },
+                    {
+                        "title": "Vehicle",
+                        "icon": "local_shipping",
+                        "link": reverse_lazy("admin:data_vehicle_changelist"),
+                    },
                 ],
             },
         ],
