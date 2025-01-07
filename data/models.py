@@ -874,11 +874,7 @@ class Passport(models.Model):
         verbose_name_plural = "Passports"
 
     def __str__(self):
-        return (
-            self.number.get("value", "Unnamed Passport")
-            if self.number
-            else "Unnamed Passport"
-        )
+        return str(self.number)
 
 
 class Representation(models.Model):
@@ -904,11 +900,7 @@ class Representation(models.Model):
         verbose_name_plural = "Representations"
 
     def __str__(self):
-        return (
-            self.summary.get("value", "Unnamed Representation")
-            if self.summary
-            else "Unnamed Representation"
-        )
+        return str(self.summary)
 
 
 class Occupancy(models.Model):
@@ -933,11 +925,7 @@ class Occupancy(models.Model):
         verbose_name_plural = "Occupancies"
 
     def __str__(self):
-        return (
-            self.summary.get("value", "Unnamed Occupancy")
-            if self.summary
-            else "Unnamed Occupancy"
-        )
+        return str(self.summary)
 
 
 class Membership(models.Model):
@@ -963,11 +951,7 @@ class Membership(models.Model):
         verbose_name_plural = "Memberships"
 
     def __str__(self):
-        return (
-            self.role.get("value", "Unnamed Membership")
-            if self.role
-            else "Unnamed Membership"
-        )
+        return str(self.role)
 
 
 class Directorship(models.Model):
@@ -993,11 +977,7 @@ class Directorship(models.Model):
         verbose_name_plural = "Directorships"
 
     def __str__(self):
-        return (
-            self.role.get("value", "Unnamed Directorship")
-            if self.role
-            else "Unnamed Directorship"
-        )
+        return str(self.role)
 
 
 class LegalEntity(models.Model):
@@ -1054,11 +1034,7 @@ class LegalEntity(models.Model):
         verbose_name_plural = "Legal Entities"
 
     def __str__(self):
-        return (
-            self.name.get("value", "Unnamed Legal Entity")
-            if self.name
-            else "Unnamed Legal Entity"
-        )
+        return str(self.name)
 
 
 class Security(models.Model):
@@ -1098,7 +1074,7 @@ class Security(models.Model):
     classification = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return self.name.get("value", "") if self.name else "Unnamed Security"
+        return str(self.name)
 
     class Meta:
         verbose_name_plural = "Securities"
