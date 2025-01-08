@@ -192,49 +192,14 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {
-                        "title": "Person",
-                        "icon": "person",
-                        "link": reverse_lazy("admin:data_person_changelist"),
+                        "title": "Address",
+                        "icon": "location_on",
+                        "link": reverse_lazy("admin:data_address_changelist"),
                     },
                     {
-                        "title": "Family",
-                        "icon": "family_restroom",
-                        "link": reverse_lazy("admin:data_family_changelist"),
-                    },
-                    {
-                        "title": "Sanction",
-                        "icon": "crossword",
-                        "link": reverse_lazy("admin:data_sanction_changelist"),
-                    },
-                    {
-                        "title": "Crypto Wallet",
-                        "icon": "account_balance_wallet",
-                        "link": reverse_lazy("admin:data_cryptowallet_changelist"),
-                    },
-                    {
-                        "title": "Succession",
-                        "icon": "package",
-                        "link": reverse_lazy("admin:data_succession_changelist"),
-                    },
-                    {
-                        "title": "Company",
-                        "icon": "apartment",
-                        "link": reverse_lazy("admin:data_company_changelist"),
-                    },
-                    {
-                        "title": "Ownership",
-                        "icon": "badge",
-                        "link": reverse_lazy("admin:data_ownership_changelist"),
-                    },
-                    {
-                        "title": "Vessel",
-                        "icon": "directions_boat",
-                        "link": reverse_lazy("admin:data_vessel_changelist"),
-                    },
-                    {
-                        "title": "Position",
-                        "icon": "mountain_flag",
-                        "link": reverse_lazy("admin:data_position_changelist"),
+                        "title": "Airplane",
+                        "icon": "flight",
+                        "link": reverse_lazy("admin:data_airplane_changelist"),
                     },
                     {
                         "title": "Asset",
@@ -247,39 +212,14 @@ UNFOLD = {
                         "link": reverse_lazy("admin:data_associate_changelist"),
                     },
                     {
-                        "title": "Identification",
-                        "icon": "fingerprint",
-                        "link": reverse_lazy("admin:data_identification_changelist"),
+                        "title": "Company",
+                        "icon": "apartment",
+                        "link": reverse_lazy("admin:data_company_changelist"),
                     },
                     {
-                        "title": "Organization",
-                        "icon": "corporate_fare",
-                        "link": reverse_lazy("admin:data_organization_changelist"),
-                    },
-                    {
-                        "title": "Airplane",
-                        "icon": "flight",
-                        "link": reverse_lazy("admin:data_airplane_changelist"),
-                    },
-                    {
-                        "title": "Public Body",
-                        "icon": "public",
-                        "link": reverse_lazy("admin:data_publicbody_changelist"),
-                    },
-                    {
-                        "title": "Employment",
-                        "icon": "handshake",
-                        "link": reverse_lazy("admin:data_employment_changelist"),
-                    },
-                    {
-                        "title": "Payment",
-                        "icon": "attach_money",
-                        "link": reverse_lazy("admin:data_payment_changelist"),
-                    },
-                    {
-                        "title": "Address",
-                        "icon": "location_on",
-                        "link": reverse_lazy("admin:data_address_changelist"),
+                        "title": "Crypto Wallet",
+                        "icon": "account_balance_wallet",
+                        "link": reverse_lazy("admin:data_cryptowallet_changelist"),
                     },
                     {
                         "title": "Debt",
@@ -287,59 +227,24 @@ UNFOLD = {
                         "link": reverse_lazy("admin:data_debt_changelist"),
                     },
                     {
-                        "title": "Unknown Link",
-                        "icon": "link",
-                        "link": reverse_lazy("admin:data_unknownlink_changelist"),
-                    },
-                    {
-                        "title": "Passport",
-                        "icon": "id_card",
-                        "link": reverse_lazy("admin:data_passport_changelist"),
-                    },
-                    {
-                        "title": "Representation",
-                        "icon": "language_japanese_kana",
-                        "link": reverse_lazy("admin:data_representation_changelist"),
-                    },
-                    {
-                        "title": "Occupancy",
-                        "icon": "sensor_occupied",
-                        "link": reverse_lazy("admin:data_occupancy_changelist"),
-                    },
-                    {
-                        "title": "Membership",
-                        "icon": "person_add",
-                        "link": reverse_lazy("admin:data_membership_changelist"),
-                    },
-                    {
                         "title": "Directorship",
                         "icon": "event_seat",
                         "link": reverse_lazy("admin:data_directorship_changelist"),
                     },
                     {
-                        "title": "Legal Entity",
-                        "icon": "gavel",
-                        "link": reverse_lazy("admin:data_legalentity_changelist"),
+                        "title": "Employment",
+                        "icon": "handshake",
+                        "link": reverse_lazy("admin:data_employment_changelist"),
                     },
                     {
-                        "title": "Security",
-                        "icon": "lock",
-                        "link": reverse_lazy("admin:data_security_changelist"),
+                        "title": "Family",
+                        "icon": "family_restroom",
+                        "link": reverse_lazy("admin:data_family_changelist"),
                     },
                     {
-                        "title": "Interval",
-                        "icon": "schedule",
-                        "link": reverse_lazy("admin:data_interval_changelist"),
-                    },
-                    {
-                        "title": "Thing",
-                        "icon": "deployed_code",
-                        "link": reverse_lazy("admin:data_thing_changelist"),
-                    },
-                    {
-                        "title": "Value",
-                        "icon": "sell",
-                        "link": reverse_lazy("admin:data_value_changelist"),
+                        "title": "Identification",
+                        "icon": "fingerprint",
+                        "link": reverse_lazy("admin:data_identification_changelist"),
                     },
                     {
                         "title": "Interest",
@@ -347,9 +252,99 @@ UNFOLD = {
                         "link": reverse_lazy("admin:data_interest_changelist"),
                     },
                     {
+                        "title": "Interval",
+                        "icon": "schedule",
+                        "link": reverse_lazy("admin:data_interval_changelist"),
+                    },
+                    {
+                        "title": "Legal Entity",
+                        "icon": "gavel",
+                        "link": reverse_lazy("admin:data_legalentity_changelist"),
+                    },
+                    {
+                        "title": "Membership",
+                        "icon": "person_add",
+                        "link": reverse_lazy("admin:data_membership_changelist"),
+                    },
+                    {
+                        "title": "Occupancy",
+                        "icon": "sensor_occupied",
+                        "link": reverse_lazy("admin:data_occupancy_changelist"),
+                    },
+                    {
+                        "title": "Organization",
+                        "icon": "corporate_fare",
+                        "link": reverse_lazy("admin:data_organization_changelist"),
+                    },
+                    {
+                        "title": "Passport",
+                        "icon": "id_card",
+                        "link": reverse_lazy("admin:data_passport_changelist"),
+                    },
+                    {
+                        "title": "Payment",
+                        "icon": "attach_money",
+                        "link": reverse_lazy("admin:data_payment_changelist"),
+                    },
+                    {
+                        "title": "Person",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:data_person_changelist"),
+                    },
+                    {
+                        "title": "Position",
+                        "icon": "mountain_flag",
+                        "link": reverse_lazy("admin:data_position_changelist"),
+                    },
+                    {
+                        "title": "Public Body",
+                        "icon": "public",
+                        "link": reverse_lazy("admin:data_publicbody_changelist"),
+                    },
+                    {
+                        "title": "Representation",
+                        "icon": "language_japanese_kana",
+                        "link": reverse_lazy("admin:data_representation_changelist"),
+                    },
+                    {
+                        "title": "Sanction",
+                        "icon": "crossword",
+                        "link": reverse_lazy("admin:data_sanction_changelist"),
+                    },
+                    {
+                        "title": "Security",
+                        "icon": "lock",
+                        "link": reverse_lazy("admin:data_security_changelist"),
+                    },
+                    {
+                        "title": "Succession",
+                        "icon": "package",
+                        "link": reverse_lazy("admin:data_succession_changelist"),
+                    },
+                    {
+                        "title": "Thing",
+                        "icon": "deployed_code",
+                        "link": reverse_lazy("admin:data_thing_changelist"),
+                    },
+                    {
+                        "title": "Unknown Link",
+                        "icon": "link",
+                        "link": reverse_lazy("admin:data_unknownlink_changelist"),
+                    },
+                    {
+                        "title": "Value",
+                        "icon": "sell",
+                        "link": reverse_lazy("admin:data_value_changelist"),
+                    },
+                    {
                         "title": "Vehicle",
                         "icon": "local_shipping",
                         "link": reverse_lazy("admin:data_vehicle_changelist"),
+                    },
+                    {
+                        "title": "Vessel",
+                        "icon": "directions_boat",
+                        "link": reverse_lazy("admin:data_vessel_changelist"),
                     },
                 ],
             },

@@ -1,8 +1,11 @@
+from django.apps import apps
 from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 from django.db.models import Q
+from django.urls import reverse
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
 
@@ -26,10 +29,11 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
 @admin.register(SanctionedEntity)
 class SanctionedEntityModelAdmin(ModelAdmin):
     list_display = (
-        # "sanctionId",
+        "sanctionId",
         "caption",
         "schema",
         "last_seen",
+        "get_related_model_link",
         "target",
     )
     list_filter = ("target", "schema", "first_seen", "last_seen", "last_change")
@@ -46,6 +50,37 @@ class SanctionedEntityModelAdmin(ModelAdmin):
         ("Dates", {"fields": ("first_seen", "last_seen", "last_change")}),
         ("Status", {"fields": ("target",)}),
     )
+
+    @admin.display(description="Data Category")
+    def get_related_model_link(self, obj):
+        """
+        Generate a link to the related model's admin change page based on the `schema` field value.
+        """
+        # Get the schema value from the SanctionedEntity instance
+        schema_value = obj.schema
+
+        if schema_value:
+            try:
+                # Dynamically fetch the model class using schema_value
+                model_class = apps.get_model("data", schema_value.capitalize())
+
+                # Get the related instance using the reverse relationship
+                related_instance = model_class.objects.get(sanctionEntity=obj)
+
+                # Generate the admin change URL for the related instance
+                url = reverse(
+                    f"admin:{model_class._meta.app_label}_{model_class._meta.model_name}_change",
+                    args=[related_instance.pk],
+                )
+                return format_html(
+                    '<a href="{}" style="text-style:underline !important">View {}</a>',
+                    url,
+                    model_class._meta.verbose_name,
+                )
+            except (AttributeError, model_class.DoesNotExist):
+                return "No related instance"
+
+        return "No matching schema"
 
 
 @admin.register(Person)
