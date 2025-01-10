@@ -136,7 +136,7 @@ class Sanction(models.Model):
     listingDate = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Sanction for {self.entity}"
+        return f"{self.entity}"
 
     class Meta:
         verbose_name_plural = "Sanctions"
@@ -162,7 +162,7 @@ class Family(models.Model):
     relationship = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Family relationship between {self.person} and {self.relative}"
+        return f"relationship between {self.person} and {self.relative}"
 
     class Meta:
         verbose_name_plural = "Families"
@@ -203,7 +203,7 @@ class CryptoWallet(models.Model):
     balance = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Crypto Wallet for {self.name}"
+        return str(self.name) if self.name is not None else str(self.sanctionEntity)
 
     class Meta:
         verbose_name_plural = "CryptoWallets"
@@ -391,7 +391,7 @@ class Vessel(models.Model):
     mmsi = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Vessel {self.name}"
+        return f"{self.name}"
 
     class Meta:
         verbose_name_plural = "Vessels"
@@ -519,7 +519,7 @@ class Identification(models.Model):
     authority = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Identification {self.number}"
+        return f"{self.number}"
 
     class Meta:
         verbose_name_plural = "Identifications"
@@ -583,7 +583,9 @@ class Organization(models.Model):
     giiNumber = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Organization {self.name}"
+        return (
+            str(self.name[0]) if isinstance(self.name, list) and len(self.name) > 1 else str(self.name)
+        )
 
     class Meta:
         verbose_name_plural = "Organizations"
@@ -690,7 +692,7 @@ class PublicBody(models.Model):
     giiNumber = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Public Body {self.name}"
+        return f"{self.name}"
 
     class Meta:
         verbose_name_plural = "Public Bodies"
@@ -779,17 +781,12 @@ class Address(models.Model):
     state = models.JSONField(blank=True, null=True)
 
     class Meta:
-        verbose_name_plural = "Addresses"
+        verbose_name_plural = "Address"
 
     def __str__(self):
-        return (
-            self.name.get("value", "Unnamed Address")
-            if self.name
-            else "Unnamed Address"
-        )
+        return str(self.sanctionEntity) 
 
-
-class Debt(models.Model):
+class Debt(models.Model): 
     sanctionEntity = models.OneToOneField(
         SanctionedEntity,
         on_delete=models.CASCADE,
@@ -843,11 +840,7 @@ class UnknownLink(models.Model):
         verbose_name_plural = "Unknown Links"
 
     def __str__(self):
-        return (
-            self.summary.get("value", "Unnamed Link")
-            if self.summary
-            else "Unnamed Link"
-        )
+        return str(self.subject)
 
 
 class Passport(models.Model):
@@ -900,7 +893,7 @@ class Representation(models.Model):
         verbose_name_plural = "Representations"
 
     def __str__(self):
-        return str(self.summary)
+        return str(self.agent)
 
 
 class Occupancy(models.Model):
@@ -951,7 +944,7 @@ class Membership(models.Model):
         verbose_name_plural = "Memberships"
 
     def __str__(self):
-        return str(self.role)
+        return str(self.member)
 
 
 class Directorship(models.Model):
@@ -977,7 +970,7 @@ class Directorship(models.Model):
         verbose_name_plural = "Directorships"
 
     def __str__(self):
-        return str(self.role)
+        return str(self.director)
 
 
 class LegalEntity(models.Model):
