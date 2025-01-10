@@ -188,7 +188,7 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "Data Category",
+                "title": "Data Schema",
                 "separator": True,
                 "items": [
                     {

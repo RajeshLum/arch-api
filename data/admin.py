@@ -30,17 +30,17 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
 class SanctionedEntityModelAdmin(ModelAdmin):
     list_display = (
         "sanctionId",
+        
         "caption",
-        "schema",
-        "last_seen",
         "get_related_model_link",
         "target",
+        "last_seen",
     )
     list_filter = ("target", "schema", "first_seen", "last_seen", "last_change")
     search_fields = ("sanctionId", "caption", "schema")
     ordering = ("-last_seen",)
     date_hierarchy = "last_seen"
-    readonly_fields = ("first_seen", "last_seen", "last_change")
+    readonly_fields = ("first_seen", "schema", "last_seen", "last_change")
     warn_unsaved_form = True
     fieldsets = (
         (
@@ -51,7 +51,7 @@ class SanctionedEntityModelAdmin(ModelAdmin):
         ("Status", {"fields": ("target",)}),
     )
 
-    @admin.display(description="Data Category")
+    @admin.display(description="Data Schema")
     def get_related_model_link(self, obj):
         """
         Generate a link to the related model's admin change page based on the `schema` field value.
@@ -73,9 +73,9 @@ class SanctionedEntityModelAdmin(ModelAdmin):
                     args=[related_instance.pk],
                 )
                 return format_html(
-                    '<a href="{}" style="text-style:underline !important">View {}</a>',
+                    '<a href="{}" style="text-style:underline !important">{}</a>',
                     url,
-                    model_class._meta.verbose_name,
+                    model_class._meta.verbose_name.capitalize(),
                 )
             except (AttributeError, model_class.DoesNotExist):
                 return "No related instance"
@@ -87,10 +87,10 @@ class SanctionedEntityModelAdmin(ModelAdmin):
 class PersonAdmin(ModelAdmin):
     list_display = (
         "sanctionEntity",
-        "name",
-        "country",
-        "gender",
-        "nationality",
+        "name_display",
+        "country_display",
+        "gender_display",
+        "nationality_display",
     )
     list_filter = (PersonGenderFilter,)
     search_fields = (
@@ -99,7 +99,10 @@ class PersonAdmin(ModelAdmin):
         "firstName",
         "lastName",
         "email",
+        "country",
+        "nationality",
         "passportNumber",
+        "gender",
     )
     ordering = ("-createdAt",)
     readonly_fields = ("createdAt", "modifiedAt", "sanctionEntity")
@@ -198,9 +201,43 @@ class PersonAdmin(ModelAdmin):
         return queryset, use_distinct
 
 
+       
+    def name_display(self, obj):
+        """Custom display for the 'name' field."""
+        if isinstance(obj.name, list) and len(obj.name) == 1:
+            return obj.name[0]
+        return obj.name
+
+    name_display.short_description = "Name"
+    
+    def gender_display(self, obj):
+        """Custom display for the 'gender' field."""
+        if isinstance(obj.gender, list) and len(obj.gender) == 1:
+            return obj.gender[0]
+        return obj.gender
+
+    gender_display.short_description = "Gender"
+    
+    def country_display(self, obj):
+        """Custom display for the 'country' field."""
+        if isinstance(obj.country, list) and len(obj.country) == 1:
+            return obj.country[0]
+        return obj.country
+
+    country_display.short_description = "Country"
+    
+    def nationality_display(self, obj):
+        """Custom display for the 'nationality' field."""
+        if isinstance(obj.nationality, list) and len(obj.nationality) == 1:
+            return obj.nationality[0]
+        return obj.nationality
+
+    nationality_display.short_description = "Nationality"
+
+
 @admin.register(Sanction)
 class SanctionAdmin(ModelAdmin):
-    list_display = ("sanctionEntity", "entity", "startDate", "endDate", "country")
+    list_display = ("sanctionEntity", "entity_display", "country_display")
     search_fields = (
         "entity",
         "recordId",
@@ -208,6 +245,7 @@ class SanctionAdmin(ModelAdmin):
         "authority",
         "unscId",
         "program",
+        "country"
     )
     ordering = ("-modifiedAt",)
     readonly_fields = ("sanctionEntity", "modifiedAt")
@@ -242,11 +280,29 @@ class SanctionAdmin(ModelAdmin):
         ),
         ("Audit", {"fields": ("modifiedAt",)}),
     )
+    
+       
+    def entity_display(self, obj):
+        """Custom display for the 'entity' field."""
+        if isinstance(obj.entity, list) and len(obj.entity) == 1:
+            return obj.entity[0]
+        return obj.entity
+
+    entity_display.short_description = "Entity"
+
+    def country_display(self, obj):
+        """Custom display for the 'country' field."""
+        if isinstance(obj.country, list) and len(obj.country) == 1:
+            return obj.country[0]
+        return obj.country
+
+    country_display.short_description = "Country"
+
 
 
 @admin.register(Family)
 class FamilyAdmin(ModelAdmin):
-    list_display = ("sanctionEntity__sanctionId", "person", "relative")
+    list_display = ("person_display", "relationship_display", "relative_display")
     search_fields = ("person", "relative", "relationship", "summary", "recordId")
     ordering = ("-modifiedAt",)
     readonly_fields = ("sanctionEntity", "modifiedAt")
@@ -274,18 +330,44 @@ class FamilyAdmin(ModelAdmin):
         ),
         ("Audit", {"fields": ("modifiedAt",)}),
     )
+    
+    
+    def person_display(self, obj):
+        """Custom display for the 'person' field."""
+        if isinstance(obj.person, list) and len(obj.person) == 1:
+            return obj.person[0]
+        return obj.person
+
+    person_display.short_description = "Person"
+    
+    def relative_display(self, obj):
+        """Custom display for the 'relative' field."""
+        if isinstance(obj.relative, list) and len(obj.relative) == 1:
+            return obj.relative[0]
+        return obj.relative
+
+    relative_display.short_description = "Relative"
+    
+    def relationship_display(self, obj):
+        """Custom display for the 'relationship' field."""
+        if isinstance(obj.relationship, list) and len(obj.relationship) == 1:
+            return obj.relationship[0]
+        return obj.relationship
+
+    relationship_display.short_description = "Relationship"
 
 
 @admin.register(CryptoWallet)
 class CryptoWalletAdmin(ModelAdmin):
-    list_display = ("sanctionEntity", "currency", "holder", "publicKey")
+    list_display = ("sanctionEntity", "currency_name", "holder_name")
     search_fields = (
         "name",
         "alias",
         "previousName",
         "sourceUrl",
-        "address",
+        "address", 
         "publicKey",
+        "currency",
         "holder",
     )
     ordering = ("-createdAt",)
@@ -340,6 +422,18 @@ class CryptoWalletAdmin(ModelAdmin):
         ),
         ("Audit", {"fields": ("createdAt", "modifiedAt")}),
     )
+    
+    def currency_name(self, obj):
+        """Custom display for the 'currency' field."""
+        if isinstance(obj.currency, list) and len(obj.currency) == 1:
+            return obj.currency[0]
+        return obj.currency
+    
+    def holder_name(self, obj):
+        """Custom display for the 'holder' field."""
+        if isinstance(obj.holder, list) and len(obj.holder) == 1:
+            return obj.holder[0]
+        return obj.holder
 
 
 @admin.register(Succession)
@@ -420,10 +514,12 @@ class CompanyAdmin(ModelAdmin):
         "website",
         "registrationNumber",
         "taxNumber",
+        "country",
         "status",
         "sector",
     )
     ordering = ("-modifiedAt",)
+    # list_filter = ["sector"]
     readonly_fields = ("sanctionEntity", "createdAt", "modifiedAt")
     # fieldsets = (
     #     ("Sanctioned Entity", {"fields": ("sanctionEntity",)}),
@@ -646,7 +742,6 @@ class VesselAdmin(ModelAdmin):
     list_display = (
         "sanctionEntity",
         "name_display",
-        "owner_display",
         "imoNumber_display",
         "flag_display",
     )
@@ -725,13 +820,6 @@ class VesselAdmin(ModelAdmin):
 
     name_display.short_description = "Name"
 
-    def owner_display(self, obj):
-        """Custom display for the 'owner' field."""
-        if isinstance(obj.owner, list) and len(obj.owner) == 1:
-            return obj.owner[0]
-        return obj.owner
-
-    owner_display.short_description = "Owner"
 
     def imoNumber_display(self, obj):
         """Custom display for the 'imoNumber' field."""
@@ -1061,8 +1149,7 @@ class OrganizationAdmin(ModelAdmin):
         "sanctionEntity",
         "name_display",
         "country_display",
-        "status_display",
-        "classification_display",
+
     )
     search_fields = (
         "name",
@@ -1185,21 +1272,6 @@ class OrganizationAdmin(ModelAdmin):
 
     country_display.short_description = "Country"
 
-    def status_display(self, obj):
-        """Custom display for the 'status' field."""
-        if isinstance(obj.status, list) and len(obj.status) == 1:
-            return obj.status[0]
-        return obj.status
-
-    status_display.short_description = "Status"
-
-    def classification_display(self, obj):
-        """Custom display for the 'classification' field."""
-        if isinstance(obj.classification, list) and len(obj.classification) == 1:
-            return obj.classification[0]
-        return obj.classification
-
-    classification_display.short_description = "Classification"
 
 
 @admin.register(Airplane)
@@ -1328,9 +1400,9 @@ class PublicBodyAdmin(ModelAdmin):
     list_display = (
         "sanctionEntity",
         "name_display",
-        "country_display",
-        "status_display",
-        "sector_display",
+        # "country_display",
+        # "status_display",
+        # "sector_display",
     )
     search_fields = (
         "name",
@@ -1438,29 +1510,29 @@ class PublicBodyAdmin(ModelAdmin):
 
     name_display.short_description = "Name"
 
-    def country_display(self, obj):
-        """Custom display for the 'country' field."""
-        if isinstance(obj.country, list) and len(obj.country) == 1:
-            return obj.country[0]
-        return obj.country
+    # def country_display(self, obj):
+    #     """Custom display for the 'country' field."""
+    #     if isinstance(obj.country, list) and len(obj.country) == 1:
+    #         return obj.country[0]
+    #     return obj.country
 
-    country_display.short_description = "Country"
+    # country_display.short_description = "Country"
 
-    def status_display(self, obj):
-        """Custom display for the 'status' field."""
-        if isinstance(obj.status, list) and len(obj.status) == 1:
-            return obj.status[0]
-        return obj.status
+    # def status_display(self, obj):
+    #     """Custom display for the 'status' field."""
+    #     if isinstance(obj.status, list) and len(obj.status) == 1:
+    #         return obj.status[0]
+    #     return obj.status
 
-    status_display.short_description = "Status"
+    # status_display.short_description = "Status"
 
-    def sector_display(self, obj):
-        """Custom display for the 'sector' field."""
-        if isinstance(obj.sector, list) and len(obj.sector) == 1:
-            return obj.sector[0]
-        return obj.sector
+    # def sector_display(self, obj):
+    #     """Custom display for the 'sector' field."""
+    #     if isinstance(obj.sector, list) and len(obj.sector) == 1:
+    #         return obj.sector[0]
+    #     return obj.sector
 
-    sector_display.short_description = "Sector"
+    # sector_display.short_description = "Sector"
 
 
 @admin.register(Employment)
@@ -1635,7 +1707,7 @@ class PaymentAdmin(ModelAdmin):
 class AddressAdmin(ModelAdmin):
     list_display = (
         "sanctionEntity",
-        "name_display",
+        # "name_display",
         "country_display",
         "city_display",
         "state_display",
@@ -1703,14 +1775,14 @@ class AddressAdmin(ModelAdmin):
         ),
     )
 
-    def name_display(self, obj):
-        return (
-            obj.name[0]
-            if isinstance(obj.name, list) and len(obj.name) == 1
-            else obj.name
-        )
+    # def name_display(self, obj):
+    #     return (
+    #         obj.name[0]
+    #         if isinstance(obj.name, list) and len(obj.name) == 1
+    #         else obj.name
+    #     )
 
-    name_display.short_description = "Name"
+    # name_display.short_description = "Name"
 
     def country_display(self, obj):
         return (
@@ -1843,7 +1915,6 @@ class DebtAdmin(ModelAdmin):
 @admin.register(UnknownLink)
 class UnknownLinkAdmin(ModelAdmin):
     list_display = (
-        "sanctionEntity",
         "subject_display",
         "object_display",
         "summary_display",
@@ -1936,8 +2007,8 @@ class PassportAdmin(ModelAdmin):
         "holder_display",
         "number_display",
         "country_display",
-        "start_date_display",
-        "end_date_display",
+        # "start_date_display",
+        # "end_date_display",
     )
     search_fields = (
         "holder",
@@ -2010,33 +2081,31 @@ class PassportAdmin(ModelAdmin):
 
     country_display.short_description = "Country"
 
-    def start_date_display(self, obj):
-        return (
-            obj.startDate[0]
-            if isinstance(obj.startDate, list) and len(obj.startDate) == 1
-            else obj.startDate
-        )
+    # def start_date_display(self, obj):
+    #     return (
+    #         obj.startDate[0]
+    #         if isinstance(obj.startDate, list) and len(obj.startDate) == 1
+    #         else obj.startDate
+    #     )
 
-    start_date_display.short_description = "Start Date"
+    # start_date_display.short_description = "Start Date"
 
-    def end_date_display(self, obj):
-        return (
-            obj.endDate[0]
-            if isinstance(obj.endDate, list) and len(obj.endDate) == 1
-            else obj.endDate
-        )
+    # def end_date_display(self, obj):
+    #     return (
+    #         obj.endDate[0]
+    #         if isinstance(obj.endDate, list) and len(obj.endDate) == 1
+    #         else obj.endDate
+    #     )
 
-    end_date_display.short_description = "End Date"
+    # end_date_display.short_description = "End Date"
 
 
 @admin.register(Representation)
 class RepresentationAdmin(ModelAdmin):
     list_display = (
-        "sanctionEntity",
         "agent_display",
+        "role_display",
         "client_display",
-        "summary_display",
-        "date_display",
     )
     search_fields = (
         "agent",
@@ -2099,23 +2168,15 @@ class RepresentationAdmin(ModelAdmin):
 
     client_display.short_description = "Client"
 
-    def summary_display(self, obj):
+    def role_display(self, obj):
         return (
-            obj.summary[0]
-            if isinstance(obj.summary, list) and len(obj.summary) == 1
-            else obj.summary
+            obj.role[0]
+            if isinstance(obj.role, list) and len(obj.role) == 1
+            else obj.role
         )
 
-    summary_display.short_description = "Summary"
+    role_display.short_description = "Role"
 
-    def date_display(self, obj):
-        return (
-            obj.date[0]
-            if isinstance(obj.date, list) and len(obj.date) == 1
-            else obj.date
-        )
-
-    date_display.short_description = "Date"
 
 
 @admin.register(Occupancy)
@@ -2209,12 +2270,9 @@ class OccupancyAdmin(ModelAdmin):
 @admin.register(Membership)
 class MembershipAdmin(ModelAdmin):
     list_display = (
-        "sanctionEntity",
         "member_display",
-        "organization_display",
         "role_display",
-        "summary_display",
-        "date_display",
+        "organization_display",
     )
     search_fields = (
         "role",
@@ -2287,29 +2345,12 @@ class MembershipAdmin(ModelAdmin):
 
     role_display.short_description = "Role"
 
-    def summary_display(self, obj):
-        return (
-            obj.summary[0]
-            if isinstance(obj.summary, list) and len(obj.summary) == 1
-            else obj.summary
-        )
-
-    summary_display.short_description = "Summary"
-
-    def date_display(self, obj):
-        return (
-            obj.date[0]
-            if isinstance(obj.date, list) and len(obj.date) == 1
-            else obj.date
-        )
-
-    date_display.short_description = "Date"
 
 
 @admin.register(Directorship)
 class DirectorshipAdmin(ModelAdmin):
     list_display = (
-        "sanctionEntity",
+        # "sanctionEntity",
         "director_display",
         "organization_display",
         "role_display",
@@ -2413,8 +2454,7 @@ class LegalEntityAdmin(ModelAdmin):
         "name_display",
         "country_display",
         "status_display",
-        "createdAt_display",
-        "modifiedAt_display",
+    
     )
     search_fields = (
         "name",
@@ -2531,24 +2571,6 @@ class LegalEntityAdmin(ModelAdmin):
 
     status_display.short_description = "Status"
 
-    def createdAt_display(self, obj):
-        return (
-            obj.createdAt[0]
-            if isinstance(obj.createdAt, list) and len(obj.createdAt) == 1
-            else obj.createdAt
-        )
-
-    createdAt_display.short_description = "Created At"
-
-    def modifiedAt_display(self, obj):
-        return (
-            obj.modifiedAt[0]
-            if isinstance(obj.modifiedAt, list) and len(obj.modifiedAt) == 1
-            else obj.modifiedAt
-        )
-
-    modifiedAt_display.short_description = "Modified At"
-
 
 @admin.register(Security)
 class SecurityAdmin(ModelAdmin):
@@ -2556,28 +2578,12 @@ class SecurityAdmin(ModelAdmin):
         "sanctionEntity",
         "name_display",
         "country_display",
-        "amount_display",
-        "currency_display",
-        "createdAt_display",
-        "modifiedAt_display",
+      
     )
     search_fields = (
         "name",
         "country",
-        "alias",
-        "previousName",
-        "address",
-        "program",
-        "keywords",
-        "notes",
-        "amount",
-        "currency",
-        "isin",
-        "registrationNumber",
-        "ticker",
-        "figiCode",
-        "issuer",
-        "type",
+        
     )
     ordering = ("-modifiedAt",)
     readonly_fields = ("sanctionEntity", "createdAt", "modifiedAt")
@@ -2644,41 +2650,6 @@ class SecurityAdmin(ModelAdmin):
 
     country_display.short_description = "Country"
 
-    def amount_display(self, obj):
-        return (
-            obj.amount[0]
-            if isinstance(obj.amount, list) and len(obj.amount) == 1
-            else obj.amount
-        )
-
-    amount_display.short_description = "Amount"
-
-    def currency_display(self, obj):
-        return (
-            obj.currency[0]
-            if isinstance(obj.currency, list) and len(obj.currency) == 1
-            else obj.currency
-        )
-
-    currency_display.short_description = "Currency"
-
-    def createdAt_display(self, obj):
-        return (
-            obj.createdAt[0]
-            if isinstance(obj.createdAt, list) and len(obj.createdAt) == 1
-            else obj.createdAt
-        )
-
-    createdAt_display.short_description = "Created At"
-
-    def modifiedAt_display(self, obj):
-        return (
-            obj.modifiedAt[0]
-            if isinstance(obj.modifiedAt, list) and len(obj.modifiedAt) == 1
-            else obj.modifiedAt
-        )
-
-    modifiedAt_display.short_description = "Modified At"
 
 
 @admin.register(Interval)
