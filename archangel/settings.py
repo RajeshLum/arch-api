@@ -39,7 +39,7 @@ ROOT_URLCONF = "archangel.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],  
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -101,6 +101,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://api.angefin.com',
+    'https://www.api.angefin.com',
+]
+
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -117,7 +122,7 @@ UNFOLD = {
     "SITE_SYMBOL": "speed",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
-    # "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
+    "DASHBOARD_CALLBACK": "data.views.dashboard_callback",
     "COLORS": {
         "font": {
             "subtle-light": "107 114 128",
@@ -350,31 +355,6 @@ UNFOLD = {
             },
         ],
     },
-    # "TABS": [
-    #     {
-    #         "models": [
-    #             "app_label.model_name_in_lowercase",
-    #         ],
-    #         "items": [
-    #             {
-    #                 "title": _("Your custom title"),
-    #                 "link": reverse_lazy("admin:app_label_model_name_changelist"),
-    #                 "permission": "sample_app.permission_callback",
-    #             },
-    #         ],
-    #     },
-    # ],
+
 }
 
-
-# def dashboard_callback(request, context):
-#     """
-#     Callback to prepare custom variables for index template which is used as dashboard
-#     template. It can be overridden in application by creating custom admin/index.html.
-#     """
-#     context.update(
-#         {
-#             "sample": "example",  # this will be injected into templates/admin/index.html
-#         }
-#     )
-#     return context
