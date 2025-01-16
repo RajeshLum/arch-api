@@ -10,9 +10,10 @@ SECRET_KEY = config("DJANGO_SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = ["*"]
 
-
+ 
 INSTALLED_APPS = [
     "unfold",
+    "rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -39,7 +40,7 @@ ROOT_URLCONF = "archangel.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -102,8 +103,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://api.angefin.com',
-    'https://www.api.angefin.com',
+    "https://api.angefin.com",
+    "https://www.api.angefin.com",
 ]
 
 
@@ -355,6 +356,4 @@ UNFOLD = {
             },
         ],
     },
-
 }
-
