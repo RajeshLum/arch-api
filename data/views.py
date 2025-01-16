@@ -1,5 +1,8 @@
+
 from django.apps import apps
 from django.shortcuts import render
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import *
 
@@ -30,3 +33,8 @@ def dashboard_callback(request, context):
     context.update(data)
 
     return context
+
+
+class HelloWorldView(APIView):
+    def get(self, request):
+        return Response({"message": "System Working"})
