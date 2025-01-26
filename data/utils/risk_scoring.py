@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 from django.db.models import Q
 
-from .models import Organization, Person, SanctionedEntity
+from ..models import SanctionedEntity
 
 
 class RiskScorer:
