@@ -1,8 +1,8 @@
 Entity Matching: api/match/ - Match entities (e.g., persons, companies) against a dataset using specific criteria✅
 Entity Searching: api/search/ - Perform free-text queries to search for entities in a dataset✅
 Risk Scoring: api/aml/risk/score - compute risk scores for individuals or entities based on data provided✅
-Risk Scoring: api/aml/risk/score/{entity_id} - compute risk scores for specific entity❌
-Entity Fetching: /api/entities/{entity_id} - Fetch entity with all it's related entity❌
+Risk Scoring: api/aml/risk/score/{entity_id} - compute risk scores for specific entity✅
+Entity Fetching: /api/entities/{entity_id} - Fetch entity with all it's related entity✅
 Reconcile Entity: /api/reconcile/ - Reconcile local data with external datasets for data cleaning, validation❌
 Batch Uploading: /api/aml/batch/upload - Upload batch data to populate db❌
 OCR Uploading: /api/ocr/upload - Upload the OCR image to lookup❌
