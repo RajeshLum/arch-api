@@ -9,7 +9,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
 
-from .adminfilters import PersonGenderFilter
+from .filters.adminfilters import PersonGenderFilter
 from .models import *
 
 admin.site.unregister(User)

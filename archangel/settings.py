@@ -123,7 +123,7 @@ UNFOLD = {
     "SITE_SYMBOL": "speed",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
-    "DASHBOARD_CALLBACK": "data.views.dashboard_callback",
+    "DASHBOARD_CALLBACK": "data.views.admin_dashboard.dashboard_callback",
     "COLORS": {
         "font": {
             "subtle-light": "107 114 128",

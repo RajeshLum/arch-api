@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class SanctionedEntity(models.Model):
@@ -1203,3 +1204,37 @@ class Vehicle(models.Model):
 
     class Meta:
         verbose_name_plural = "Vehicles"
+
+
+
+
+class BatchUpload(models.Model):
+    STATUS_CHOICES = [
+        ('uploaded', 'Uploaded'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+
+    batch_id = models.UUIDField(primary_key=True, editable=False)
+    file_name = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='uploaded')
+    success_count = models.IntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+        ]
+
+class BatchError(models.Model):
+    batch = models.ForeignKey(BatchUpload, related_name='errors', on_delete=models.CASCADE)
+    line_number = models.IntegerField(null=True, blank=True)
+    error_message = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['line_number']
