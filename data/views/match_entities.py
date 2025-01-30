@@ -2,7 +2,7 @@ import operator
 from functools import reduce
 
 from django.apps import apps
-from django.db.models import Q
+from django.db.models import Model, Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,45 +15,50 @@ class MatchEntitiesView(APIView):
         queries = request.data.get("queries", {})
         responses = {}
 
+        if not isinstance(queries, dict):
+            return Response({"error": "Invalid input format. 'queries' should be a dictionary."}, status=status.HTTP_400_BAD_REQUEST)
+        
         for entity_key, entity_data in queries.items():
             schema = entity_data.get("schema")
             properties = entity_data.get("properties", {})
-            
-            try:
-                # Dynamically fetch the model based on schema
-                model = apps.get_model(app_label="data", model_name=schema)
-            except LookupError:
-                responses[entity_key] = {
-                    "error": f"Model '{schema}' not found in the database."
-                }
+
+            if not schema or not isinstance(properties, dict):
+                responses[entity_key] = {"error": "Invalid schema or properties format."}
                 continue
 
-            # Build the Q objects for filtering
-            filters = []
-            for field, values in properties.items():
-                field_queries = Q()
-                for value in values:
-                    field_queries |= Q(**{f"{field}__icontains": value})
-                filters.append(field_queries)
+            try:
+                model = apps.get_model(app_label="data", model_name=schema)
+            except LookupError:
+                responses[entity_key] = {"error": f"Model '{schema}' not found in the database."}
+                continue
 
-            # Perform the query
-            results = model.objects.filter(reduce(operator.and_, filters))
-            
-            # Prepare results with all attributes
-            responses[entity_key] = {
-                "query": entity_data,
-                "results": [
-                    {
-                        "id": result.id,
-                        "score": 0.95,  # Dummy score logic
-                        "attributes": {
-                            field.name: self.serialize_field(getattr(result, field.name))
-                            for field in result._meta.fields
-                        }
+            try:
+                filters = []
+                for field, values in properties.items():
+                    if not isinstance(values, list):
+                        responses[entity_key] = {"error": f"Values for field '{field}' must be a list."}
+                        break
+                    field_queries = Q()
+                    for value in values:
+                        field_queries |= Q(**{f"{field}__icontains": value})
+                    filters.append(field_queries)
+                else:
+                    results = model.objects.filter(reduce(operator.and_, filters)) if filters else model.objects.all()
+                    responses[entity_key] = {
+                        "query": entity_data,
+                        "results": [
+                            {
+                                "id": result.id,
+                                "attributes": {
+                                    field.name: self.serialize_field(getattr(result, field.name))
+                                    for field in result._meta.fields
+                                },
+                            }
+                            for result in results
+                        ],
                     }
-                    for result in results
-                ]
-            }
+            except Exception as e:
+                responses[entity_key] = {"error": f"An error occurred while processing: {str(e)}"}
 
         return Response({"responses": responses}, status=status.HTTP_200_OK)
 
@@ -61,15 +66,14 @@ class MatchEntitiesView(APIView):
         """
         Convert a field value to a JSON-serializable format.
         """
-        if isinstance(value, models.Model):
-            # If the field is a related model, return its string representation
-            return str(value)
-        elif isinstance(value, (list, dict)):
-            # Return the value directly if it is already JSON-serializable
-            return value
-        elif hasattr(value, "__dict__"):
-            # For objects with attributes, serialize their dictionary representation
-            return {k: v for k, v in value.__dict__.items() if not k.startswith("_")}
-        else:
-            # For other types (e.g., numbers, strings), return the value as is
-            return value
+        try:
+            if isinstance(value, Model):
+                return str(value)
+            elif isinstance(value, (list, dict)):
+                return value
+            elif hasattr(value, "__dict__"):
+                return {k: v for k, v in value.__dict__.items() if not k.startswith("_")}
+            else:
+                return value
+        except Exception as e:
+            return f"Serialization error: {str(e)}"

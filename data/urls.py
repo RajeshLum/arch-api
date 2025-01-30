@@ -2,6 +2,7 @@ from django.urls import path
 
 from data.views.batch_processing import BatchStatusView, UploadDataView
 from data.views.entity_details import EntityDetailView
+from data.views.reconcile import ReconcileView
 
 from .views.match_entities import MatchEntitiesView
 from .views.risk_scoring import RiskScoringView
@@ -16,4 +17,6 @@ urlpatterns = [
     path('api/aml/risk/details/<str:entity_id>', RiskDetailsView.as_view(), name='risk-details'),
     path('api/batch-upload/', UploadDataView.as_view(), name='batch-upload'),
     path('api/batch-status/<str:batch_id>/', BatchStatusView.as_view(), name='batch-status'),
+    path('api/reconcile/', ReconcileView.as_view(), name='reconcile-entities'),
+
 ]

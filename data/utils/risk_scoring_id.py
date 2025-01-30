@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 from django.db.models import Q
 
 from ..models import Organization, Person, SanctionedEntity
+from .COUNTRY import COUNTRY_RISK_LEVELS
 
 
 class RiskScorer:
@@ -14,20 +15,7 @@ class RiskScorer:
         'transactions': 0.10
     }
 
-    COUNTRY_RISK_LEVELS = {
-        'HIGH_RISK': [
-            'kp',  # Democratic People's Republic of Korea (North Korea)
-            'ir',  # Iran
-            'mm',  # Myanmar
-        ],
-        'MEDIUM_RISK': [
-            'al', 'bb', 'bf', 'bz', 'ci', 'dm', 'cd', 'fj', 'gh', 'gt', 
-            'ht', 'jm', 'jo', 'lb', 'lr', 'mg', 'ml', 'ma', 'mo', 'ne', 
-            'ng', 'pa', 'sn', 'ss', 'sr', 'sy', 'tz', 'tt', 'ug', 'ae', 
-            've', 'ye'
-        ],
-        'LOW_RISK': ['us', 'gb']
-    }
+    COUNTRY_RISK_LEVELS = COUNTRY_RISK_LEVELS
 
     def __init__(self, entity_id: str, entity_name: str, entity_nationality: str):
         self.entity_id = entity_id
