@@ -4,7 +4,7 @@ Risk Scoring: api/aml/risk/score - compute risk scores for individuals or entiti
 Risk Scoring: api/aml/risk/score/{entity_id} - compute risk scores for specific entity✅
 Entity Fetching: /api/entities/{entity_id} - Fetch entity with all it's related entity✅
 Batch Uploading: /api/aml/batch/upload - Upload batch data to populate db✅
-Reconcile Entity: /api/reconcile/ - Reconcile local data with external datasets for data cleaning, validation❌
+Reconcile Entity: /api/reconcile/ - Reconcile local data with external datasets for data cleaning, validation✅
 OCR Uploading: /api/ocr/upload - Upload the OCR image to lookup❌
 
 
