@@ -2,6 +2,7 @@ from django.urls import path
 
 from data.views.batch_processing import BatchStatusView, UploadDataView
 from data.views.entity_details import EntityDetailView
+from data.views.ocr import PassportOCRView
 from data.views.reconcile import ReconcileView
 
 from .views.match_entities import MatchEntitiesView
@@ -18,5 +19,5 @@ urlpatterns = [
     path('api/batch-upload/', UploadDataView.as_view(), name='batch-upload'),
     path('api/batch-status/<str:batch_id>/', BatchStatusView.as_view(), name='batch-status'),
     path('api/reconcile/', ReconcileView.as_view(), name='reconcile-entities'),
-
+    path('api/ocr/upload/', PassportOCRView.as_view(), name='extract-passport'),
 ]
