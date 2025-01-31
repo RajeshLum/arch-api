@@ -1,11 +1,21 @@
+import os
 import re
 from pprint import pprint
 
 import cv2
 import pytesseract
 from passporteye import read_mrz
+from rest_framework import serializers, status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
+# Serializer for image file upload
+class PassportImageSerializer(serializers.Serializer):
+    image = serializers.FileField()
+
+# Function to extract text using OCR
 def extract_text_from_passport(image_path):
     """Extract raw text from passport using OCR"""
     image = cv2.imread(image_path)
@@ -15,6 +25,7 @@ def extract_text_from_passport(image_path):
     text = pytesseract.image_to_string(gray)
     return text
 
+# Function to extract MRZ data
 def extract_mrz_data(image_path):
     """Extract MRZ and parse structured data"""
     mrz = read_mrz(image_path)
@@ -24,6 +35,7 @@ def extract_mrz_data(image_path):
     mrz_data = mrz.to_dict()
     return mrz_data
 
+# Function to parse raw OCR text
 def parse_passport_text(text):
     """Extract key passport details from raw OCR text"""
     data = {}
@@ -59,6 +71,7 @@ def parse_passport_text(text):
 
     return data
 
+# Function to extract all passport details including MRZ
 def extract_passport_info(image_path):
     """Extract all passport details including MRZ"""
     raw_text = extract_text_from_passport(image_path)
@@ -71,9 +84,28 @@ def extract_passport_info(image_path):
         'MRZ Data': mrz_data
     }
 
-if __name__ == "__main__":
-    image_path = "/var/www/ArchAngel-datalake/images/pass7.jpg" 
-    passport_info = extract_passport_info(image_path)
+# DRF API View
+class PassportOCRView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def get_serializer(self):
+        return PassportImageSerializer()
 
-    print("Extracted Passport Information:")
-    pprint(passport_info)
+    def post(self, request):
+        """Handle passport image upload and return extracted data"""
+        serializer = PassportImageSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            image = request.FILES['image']
+            image_path = "/tmp/" + image.name  
+            with open(image_path, 'wb') as f:
+                for chunk in image.chunks():
+                    f.write(chunk)
+
+            # Extract passport information
+            passport_info = extract_passport_info(image_path)
+
+            os.remove(image_path) 
+            return Response(passport_info, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
