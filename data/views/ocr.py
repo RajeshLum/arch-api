@@ -1,3 +1,4 @@
+import os
 import re
 from pprint import pprint
 
@@ -96,9 +97,7 @@ class PassportOCRView(APIView):
         
         if serializer.is_valid():
             image = request.FILES['image']
-            image_path = "/tmp/" + image.name  # Save the uploaded file to a temporary path
-
-            # Save the uploaded file temporarily
+            image_path = "/tmp/" + image.name  
             with open(image_path, 'wb') as f:
                 for chunk in image.chunks():
                     f.write(chunk)
@@ -106,9 +105,7 @@ class PassportOCRView(APIView):
             # Extract passport information
             passport_info = extract_passport_info(image_path)
 
-            # Optionally, clean up the temp file after processing
-            # os.remove(image_path)  # Uncomment if you want to remove the file after processing
-
+            os.remove(image_path) 
             return Response(passport_info, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
