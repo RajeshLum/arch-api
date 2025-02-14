@@ -4,13 +4,18 @@ from functools import reduce
 from django.apps import apps
 from django.db.models import Model, Q
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import *
 
 
 class MatchEntitiesView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, *args, **kwargs):
         queries = request.data.get("queries", {})
         responses = {}

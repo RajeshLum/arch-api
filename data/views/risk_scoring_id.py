@@ -1,12 +1,16 @@
 from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from data.models import Organization, Person, SanctionedEntity
 from data.utils.risk_scoring_id import RiskScorer
 
 
 class RiskDetailsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, entity_id):
         """
         Fetch detailed risk score information for a specific entity.

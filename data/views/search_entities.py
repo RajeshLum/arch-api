@@ -4,13 +4,18 @@ from functools import reduce
 from django.apps import apps
 from django.db.models import Model, Q
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import *
 
 
 class SearchEntitiesView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
         query_string = request.query_params.get("q", "").strip()
         limit = int(request.query_params.get("limit", 10))

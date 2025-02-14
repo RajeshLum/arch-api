@@ -9,8 +9,10 @@ from fuzzywuzzy import fuzz
 from passporteye import read_mrz
 from rest_framework import serializers, status
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from data.models import Person
 from data.serializers.ocr import PassportImageSerializer
@@ -118,6 +120,8 @@ class PersonSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PassportOCRLookup(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer(self):

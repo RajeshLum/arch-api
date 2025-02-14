@@ -7,8 +7,10 @@ import pytesseract
 from passporteye import read_mrz
 from rest_framework import serializers, status
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 # Serializer for image file upload
@@ -87,6 +89,9 @@ def extract_passport_info(image_path):
 # DRF API View
 class PassportOCRView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     
     def get_serializer(self):
         return PassportImageSerializer()

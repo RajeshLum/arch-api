@@ -5,18 +5,20 @@ from django.apps import apps
 from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import FileField, Serializer
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from data.models import BatchError, BatchUpload, SanctionedEntity
+from data.serializers.batch_processing import FileUploadSerializer
 
-
-class FileUploadSerializer(Serializer):
-    file = FileField()
 
 class UploadDataView(APIView):
     parser_classes = [MultiPartParser]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get_serializer(self):
         return FileUploadSerializer()
@@ -114,6 +116,9 @@ class UploadDataView(APIView):
             )
 
 class BatchStatusView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, batch_id):
         try:
             batch_upload = BatchUpload.objects.get(batch_id=batch_id)
