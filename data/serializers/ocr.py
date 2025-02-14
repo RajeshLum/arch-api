@@ -1,5 +1,5 @@
-from rest_framework.serializers import FileField, ImageField, Serializer
+from rest_framework import serializers, status
 
 
-class PassportImageSerializer(Serializer):
-    image = ImageField()
+class PassportImageSerializer(serializers.Serializer):
+    image = serializers.FileField()

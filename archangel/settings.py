@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     "unfold",
     "rest_framework",
     "djoser",
+    "drf_spectacular",
     "rest_framework_simplejwt",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -372,6 +373,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+
 }
 
 SIMPLE_JWT = {
@@ -382,3 +385,10 @@ SIMPLE_JWT = {
 }
 
 
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Arch Angel Datalake',
+    'DESCRIPTION': 'Backend API endpoints of ArchAngel Datalake',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}

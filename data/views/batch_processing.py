@@ -7,7 +7,6 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.serializers import FileField, Serializer
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -16,6 +15,9 @@ from data.serializers.batch_processing import FileUploadSerializer
 
 
 class UploadDataView(APIView):
+    """
+    API endpoint to upload entities file
+    """
     parser_classes = [MultiPartParser]
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -116,6 +118,9 @@ class UploadDataView(APIView):
             )
 
 class BatchStatusView(APIView):
+    """
+    API endpoint to get the satus of uploading
+    """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     

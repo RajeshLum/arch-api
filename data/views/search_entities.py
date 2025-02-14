@@ -1,8 +1,11 @@
 import operator
 from functools import reduce
+from typing import List
 
 from django.apps import apps
 from django.db.models import Model, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,10 +19,87 @@ class SearchEntitiesView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Search entities across models",
+        description="Performs a case-insensitive search across text fields of entity models. Results are sorted by relevance score.",
+        parameters=[
+            OpenApiParameter(
+                name="q",
+                description="Search query string",
+                required=True,
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "Example Query",
+                        value="example search"
+                    ),
+                ]
+            ),
+            OpenApiParameter(
+                name="limit",
+                description="Maximum number of results to return",
+                required=False,
+                type=int,
+                default=10,
+            ),
+            OpenApiParameter(
+                name="entity_type",
+                description="Filter results by specific entity type (model name)",
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="country",
+                description="Filter results by country",
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="topics",
+                description="Filter results by topics",
+                required=False,
+                type=str,
+            ),
+        ],
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "integer"},
+                                "name": {"type": "string"},
+                                "relevance": {"type": "number"},
+                                "attributes": {
+                                    "type": "object",
+                                    "additionalProperties": True
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "example": "The 'q' parameter is required."
+                    }
+                }
+            }
+        }
+    )
     def get(self, request, *args, **kwargs):
         query_string = request.query_params.get("q", "").strip()
         limit = int(request.query_params.get("limit", 10))
-        # Optional filter
         entity_type = request.query_params.get("entity_type") 
         country = request.query_params.get("country") 
         topics = request.query_params.get("topics") 

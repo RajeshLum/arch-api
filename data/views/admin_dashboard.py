@@ -5,8 +5,8 @@ from ..models import *
 
 
 def dashboard_callback(request, context):
+    """Dashboard Chart in admin page"""
     model_data = []
-
     app_config = apps.get_app_config('data')  
     models = app_config.get_models()
 
@@ -24,10 +24,7 @@ def dashboard_callback(request, context):
     data = {
         "model_data": model_data,  
         "title": "Arch Angel Dashboard",
-        # "subtitle": "Model Record Count",
     }
-
     context.update(data)
-
     return context
 
