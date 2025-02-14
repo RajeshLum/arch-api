@@ -1,7 +1,9 @@
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import *
 from ..serializers.risk_scoring import (
@@ -12,6 +14,8 @@ from ..utils.risk_scoring import RiskScorer
 
 
 class RiskScoringView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         """
         Calculate risk score for an entity based on provided information.

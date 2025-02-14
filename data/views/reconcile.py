@@ -4,13 +4,17 @@ from typing import Dict, List
 from django.db.models import Q
 from fuzzywuzzy import fuzz
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from data.models import Organization, Person
 
 
 class ReconcileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get_scoring_criteria(self) -> Dict:
         """Define scoring weights for different match criteria."""
         return {

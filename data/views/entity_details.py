@@ -1,7 +1,9 @@
 from rest_framework import status
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import SanctionedEntity
 from ..serializers.entity_details import EntityDetailSerializer
@@ -11,6 +13,8 @@ class EntityDetailView(APIView):
     """
     API endpoint to fetch detailed information for a specific SanctionedEntity.
     """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, entity_id):
         try:
