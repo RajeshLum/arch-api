@@ -2,6 +2,13 @@ import json
 from typing import Dict, List
 
 from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from fuzzywuzzy import fuzz
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -96,7 +103,115 @@ class ReconcileView(APIView):
             }
         
         return None
-
+    
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='entities',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='List of entities to reconcile, provided as JSON strings.',
+                required=True,
+                many=True,
+                # example=[
+                #     '{"name": "John Doe", "birth_date": "1975-04-21", "nationality": "US"}',
+                #     '{"name": "Jane Smith", "registration_number": "12345"}',
+                # ],
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Reconciliation results for the provided entities.",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "reconciled_entities": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "string", "description": "Unique identifier of the matched entity."},
+                                    "name": {"type": "string", "description": "Name of the matched entity."},
+                                    "matched_score": {"type": "number", "description": "Confidence score of the match (0-1)."},
+                                    "match_details": {
+                                        "type": "object",
+                                        "description": "Details of the match criteria.",
+                                        "properties": {
+                                            "name_match": {"type": "number", "description": "Similarity score for name matching (0-1)."},
+                                            "birth_date_match": {"type": "boolean", "description": "Whether the birth date matched."},
+                                            "nationality_match": {"type": "boolean", "description": "Whether the nationality matched."},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ),
+            400: OpenApiResponse(
+                description="Bad Request",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "No entities provided for reconciliation."},
+                    },
+                },
+            ),
+            500: OpenApiResponse(
+                description="Internal Server Error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Reconciliation failed: <error_message>"},
+                    },
+                },
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                name="Successful Reconciliation",
+                value={
+                    "reconciled_entities": [
+                        {
+                            "id": "1001",
+                            "name": "John Doe",
+                            "matched_score": 0.95,
+                            "match_details": {
+                                "name_match": 0.95,
+                                "birth_date_match": True,
+                                "nationality_match": True,
+                            },
+                        },
+                        {
+                            "id": "1002",
+                            "name": "Jane Smith",
+                            "matched_score": 0.85,
+                            "match_details": {
+                                "name_match": 0.85,
+                                "birth_date_match": False,
+                                "nationality_match": False,
+                            },
+                        },
+                    ],
+                },
+                status_codes=['200'],
+            ),
+            OpenApiExample(
+                name="No Entities Provided",
+                value={
+                    "error": "No entities provided for reconciliation.",
+                },
+                status_codes=['400'],
+            ),
+            OpenApiExample(
+                name="Internal Server Error",
+                value={
+                    "error": "Reconciliation failed: <error_message>",
+                },
+                status_codes=['500'],
+            ),
+        ],
+    )
     def get(self, request):
         """Handle GET request for entity reconciliation."""
         try:
