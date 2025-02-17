@@ -23,6 +23,8 @@ class EntityDetailView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     @extend_schema(
+        summary="Fetch detailed information for a specific SanctionedEntity",
+
         parameters=[
             OpenApiParameter(
                 name='entity_id',
@@ -98,6 +100,7 @@ class EntityDetailView(APIView):
                 status_codes=['404'],
             ),
         ],
+    tags=["Sanction Query"]
     )
     def get(self, request, entity_id):
         try:

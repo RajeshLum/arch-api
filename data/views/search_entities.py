@@ -95,7 +95,8 @@ class SearchEntitiesView(APIView):
                     }
                 }
             }
-        }
+        },
+        tags=["Sanction Query"]
     )
     def get(self, request, *args, **kwargs):
         query_string = request.query_params.get("q", "").strip()

@@ -105,6 +105,8 @@ class ReconcileView(APIView):
         return None
     
     @extend_schema(
+        summary="Reconcile local data with external ftm.json data",
+
         parameters=[
             OpenApiParameter(
                 name='entities',
@@ -113,10 +115,6 @@ class ReconcileView(APIView):
                 description='List of entities to reconcile, provided as JSON strings.',
                 required=True,
                 many=True,
-                # example=[
-                #     '{"name": "John Doe", "birth_date": "1975-04-21", "nationality": "US"}',
-                #     '{"name": "Jane Smith", "registration_number": "12345"}',
-                # ],
             ),
         ],
         responses={
@@ -211,6 +209,7 @@ class ReconcileView(APIView):
                 status_codes=['500'],
             ),
         ],
+    tags=["Reconcilation"]
     )
     def get(self, request):
         """Handle GET request for entity reconciliation."""

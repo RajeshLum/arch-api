@@ -33,6 +33,7 @@ class UploadDataView(APIView):
         return FileUploadSerializer()
     
     @extend_schema(
+        summary="Upload ftm.json file as batch",
         request={
             'multipart/form-data': {
                 'type': 'object',
@@ -97,6 +98,8 @@ class UploadDataView(APIView):
                 status_codes=['400'],
             ),
         ],
+    tags=["Batch Processing"]
+
     )
     def post(self, request):
         file = request.FILES.get("file")
@@ -197,6 +200,7 @@ class BatchStatusView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     @extend_schema(
+        summary="Get the status of batch upload",
         parameters=[
             OpenApiParameter(
                 name='batch_id',
@@ -265,6 +269,8 @@ class BatchStatusView(APIView):
                 status_codes=['404'],
             ),
         ],
+        
+    tags=["Batch Processing"]
     )
     def get(self, request, batch_id):
         try:

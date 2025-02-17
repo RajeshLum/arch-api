@@ -36,6 +36,8 @@ class PassportOCRLookup(APIView):
         return PassportImageSerializer()
     
     @extend_schema(
+        summary="Handle passport image upload and return extracted data with matching person",
+
         request={
             'multipart/form-data': {
                 'type': 'object',
@@ -177,6 +179,7 @@ class PassportOCRLookup(APIView):
                 status_codes=['400'],
             ),
         ],
+    tags=["OCR"]
     )
     def post(self, request):
         """Handle passport image upload and return extracted data with matching person"""
