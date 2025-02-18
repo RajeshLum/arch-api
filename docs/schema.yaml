@@ -1,0 +1,2474 @@
+openapi: 3.0.3
+info:
+  title: Arch Angel Datalake
+  version: 1.0.0
+  description: Backend API endpoints of ArchAngel Datalake
+paths:
+  /api/aml/risk/details/{entity_id}:
+    get:
+      operationId: api_aml_risk_details_retrieve
+      description: Get detailed risk assessment information for a specific entity
+        including sanctions, PEP status, geographic risk, and adverse media findings.
+      summary: Fetch Risk Score Details
+      parameters:
+      - in: path
+        name: entity_id
+        schema:
+          type: string
+        description: Unique identifier for the entity
+        required: true
+      tags:
+      - Risk Assessment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskDetailsResponse'
+              examples:
+                SuccessfulResponse:
+                  value:
+                    entity_id: '1001'
+                    name: John Doe
+                    risk_score: 0.87
+                    risk_category: High Risk
+                    details:
+                      sanctions:
+                        status: Flagged
+                        datasets:
+                        - OFAC
+                        - EU
+                        confidence: 0.95
+                      pep:
+                        status: Not Flagged
+                      geography:
+                        status: High Risk
+                        country: XYZ
+                        reason: Listed as high-risk by FATF.
+                      adverse_media:
+                        status: Flagged
+                        reports:
+                        - source: News Article
+                          details: Fraud accusation in 2023.
+                  summary: Successful Response
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+              examples:
+                EntityNotFound:
+                  value:
+                    message: Entity not found
+                  summary: Entity Not Found
+          description: ''
+  /api/aml/risk/score:
+    post:
+      operationId: api_aml_risk_score_create
+      description: Calculate risk score for an entity based on provided entity and
+        transaction information.
+      summary: Submit Risk Scoring Request
+      tags:
+      - Risk Assessment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskScoringRequest'
+            examples:
+              SampleRequest:
+                value:
+                  entity:
+                    name: John Doe
+                    date_of_birth: '1975-04-21'
+                    nationality: US
+                    id_number: A12345678
+                    address: 123 Main Street, New York, USA
+                  transactions:
+                    volume: 50000
+                    frequency: 5
+                summary: Sample Request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RiskScoringRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RiskScoringRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoringResponse'
+              examples:
+                SuccessfulResponse:
+                  value:
+                    entity_id: '1001'
+                    risk_score: 0.87
+                    risk_category: High Risk
+                    reasons:
+                    - High confidence match on OFAC sanctions list.
+                    - 'Located in high-risk jurisdiction (Country: XYZ).'
+                    - Adverse media reports found (e.g., fraud accusations).
+                    breakdown:
+                      Sanctions Match: 0.4
+                      PEP: 0.1
+                      Geography: 0.2
+                      Adverse Media: 0.15
+                      Transactions: 0.02
+                  summary: Successful Response
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                ValidationError:
+                  value:
+                    errors:
+                      entity:
+                        name:
+                        - This field is required.
+                  summary: Validation Error
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingError'
+          description: ''
+  /api/batch-status/{batch_id}/:
+    get:
+      operationId: api_batch_status_retrieve
+      description: API endpoint to get the satus of uploading
+      summary: Get the status of batch upload
+      parameters:
+      - in: path
+        name: batch_id
+        schema:
+          type: string
+          format: uuid
+        description: UUID of the batch upload
+        required: true
+      tags:
+      - Batch Processing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  file_name:
+                    type: string
+                  success_count:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        line_number:
+                          type: integer
+                        error_message:
+                          type: string
+              examples:
+                BatchStatus:
+                  value:
+                    batch_id: 123e4567-e89b-12d3-a456-426614174000
+                    status: completed
+                    file_name: entities.json
+                    success_count: 100
+                    created_at: '2023-10-01T12:34:56Z'
+                    updated_at: '2023-10-01T12:35:10Z'
+                    errors:
+                    - line_number: 5
+                      error_message: Invalid JSON format
+                    - line_number: 10
+                      error_message: Missing required field
+                  summary: Batch Status
+          description: Batch status retrieved successfully.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                BatchNotFound:
+                  value:
+                    error: Batch ID not found.
+                  summary: Batch Not Found
+          description: Not Found
+  /api/batch-upload/:
+    post:
+      operationId: api_batch_upload_create
+      description: API endpoint to upload entities file
+      summary: Upload ftm.json file as batch
+      tags:
+      - Batch Processing
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JSON file containing entities data
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch_id:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                  success_count:
+                    type: integer
+                  errors:
+                    type: integer
+              examples:
+                SuccessfulUpload:
+                  value:
+                    batch_id: 123e4567-e89b-12d3-a456-426614174000
+                    message: File processed successfully.
+                    success_count: 100
+                    errors: 2
+                  summary: Successful Upload
+          description: File processed successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                InvalidFileType:
+                  value:
+                    error: Invalid file type. Only JSON files are allowed.
+                  summary: Invalid File Type
+          description: Bad Request
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  batch_id:
+                    type: string
+                    format: uuid
+          description: Internal Server Error
+  /api/entities/{entity_id}/:
+    get:
+      operationId: api_entities_retrieve
+      description: API endpoint to fetch detailed information for a specific SanctionedEntity.
+      summary: Fetch detailed information for a specific SanctionedEntity
+      parameters:
+      - in: path
+        name: entity_id
+        schema:
+          type: string
+        description: Unique identifier of the entity (sanctionId).
+        required: true
+      tags:
+      - Sanction Query
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier of the entity.
+                  name:
+                    type: string
+                    description: Name of the entity.
+                  attributes:
+                    type: object
+                    description: Additional attributes of the entity.
+                    properties:
+                      birthDate:
+                        type: string
+                        format: date
+                        description: Birth date of the entity.
+                      nationality:
+                        type: string
+                        description: Nationality of the entity.
+                      address:
+                        type: string
+                        description: Address of the entity.
+                  linkedEntities:
+                    type: array
+                    description: List of entities linked to this entity (e.g., family
+                      members, subsidiaries).
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique identifier of the linked entity.
+                        type:
+                          type: string
+                          description: Type of the linked entity (e.g., FamilyMember,
+                            Subsidiary).
+                        name:
+                          type: string
+                          description: Name of the linked entity.
+              examples:
+                EntityDetails:
+                  value:
+                    id: '1001'
+                    name: John Doe
+                    attributes:
+                      birthDate: '1975-04-21'
+                      nationality: US
+                      address: 123 Main Street, NY
+                    linkedEntities:
+                    - id: '2001'
+                      type: FamilyMember
+                      name: Jane Doe
+                  summary: Entity Details
+          description: Entity details retrieved successfully.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Entity not found.
+              examples:
+                EntityNotFound:
+                  value:
+                    detail: Entity not found.
+                  summary: Entity Not Found
+          description: Not Found
+  /api/match/:
+    post:
+      operationId: api_match_create
+      description: "\n        Match provided entities against database records using\
+        \ flexible property matching.\n        For each entity query, specify:\n \
+        \       - schema: The model/entity type to search against\n        - properties:\
+        \ Dictionary of field names and their possible values to match\n        \n\
+        \        Available Models and Their Fields:\n        - sanctionedentity:\n\
+        \  - id: BigAutoField\n  - sanctionId: TextField\n  - caption: TextField (nullable)\n\
+        \  - schema: TextField (nullable)\n  - referents: JSONField (nullable)\n \
+        \ - datasets: JSONField (nullable)\n  - first_seen: DateTimeField (nullable)\n\
+        \  - last_seen: DateTimeField (nullable)\n  - last_change: DateTimeField (nullable)\n\
+        \  - target: BooleanField\n\n- person:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - country: JSONField (nullable)\n\
+        \  - alias: JSONField (nullable)\n  - previousName: JSONField (nullable)\n\
+        \  - weakAlias: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - wikidataId: JSONField (nullable)\n\
+        \  - keywords: JSONField (nullable)\n  - topics: JSONField (nullable)\n  -\
+        \ address: JSONField (nullable)\n  - addressEntity: JSONField (nullable)\n\
+        \  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n  - createdAt:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - email: JSONField\
+        \ (nullable)\n  - phone: JSONField (nullable)\n  - website: JSONField (nullable)\n\
+        \  - legalForm: JSONField (nullable)\n  - incorporationDate: JSONField (nullable)\n\
+        \  - dissolutionDate: JSONField (nullable)\n  - status: JSONField (nullable)\n\
+        \  - sector: JSONField (nullable)\n  - classification: JSONField (nullable)\n\
+        \  - registrationNumber: JSONField (nullable)\n  - idNumber: JSONField (nullable)\n\
+        \  - taxNumber: JSONField (nullable)\n  - vatCode: JSONField (nullable)\n\
+        \  - jurisdiction: JSONField (nullable)\n  - mainCountry: JSONField (nullable)\n\
+        \  - opencorporatesUrl: JSONField (nullable)\n  - icijId: JSONField (nullable)\n\
+        \  - okpoCode: JSONField (nullable)\n  - innCode: JSONField (nullable)\n \
+        \ - ogrnCode: JSONField (nullable)\n  - leiCode: JSONField (nullable)\n  -\
+        \ dunsCode: JSONField (nullable)\n  - uniqueEntityId: JSONField (nullable)\n\
+        \  - npiCode: JSONField (nullable)\n  - swiftBic: JSONField (nullable)\n \
+        \ - parent: JSONField (nullable)\n  - title: JSONField (nullable)\n  - firstName:\
+        \ JSONField (nullable)\n  - secondName: JSONField (nullable)\n  - middleName:\
+        \ JSONField (nullable)\n  - fatherName: JSONField (nullable)\n  - motherName:\
+        \ JSONField (nullable)\n  - lastName: JSONField (nullable)\n  - nameSuffix:\
+        \ JSONField (nullable)\n  - birthDate: JSONField (nullable)\n  - birthPlace:\
+        \ JSONField (nullable)\n  - birthCountry: JSONField (nullable)\n  - deathDate:\
+        \ JSONField (nullable)\n  - position: JSONField (nullable)\n  - nationality:\
+        \ JSONField (nullable)\n  - citizenship: JSONField (nullable)\n  - passportNumber:\
+        \ JSONField (nullable)\n  - socialSecurityNumber: JSONField (nullable)\n \
+        \ - gender: JSONField (nullable)\n  - ethnicity: JSONField (nullable)\n  -\
+        \ height: JSONField (nullable)\n  - weight: JSONField (nullable)\n  - eyeColor:\
+        \ JSONField (nullable)\n  - hairColor: JSONField (nullable)\n  - appearance:\
+        \ JSONField (nullable)\n  - religion: JSONField (nullable)\n  - political:\
+        \ JSONField (nullable)\n  - education: JSONField (nullable)\n\n- sanction:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - entity: JSONField\
+        \ (nullable)\n  - startDate: JSONField (nullable)\n  - endDate: JSONField\
+        \ (nullable)\n  - date: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - recordId: TextField (nullable)\n\
+        \  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField (nullable)\n\
+        \  - modifiedAt: JSONField (nullable)\n  - authority: JSONField (nullable)\n\
+        \  - authorityId: JSONField (nullable)\n  - unscId: JSONField (nullable)\n\
+        \  - program: JSONField (nullable)\n  - programId: JSONField (nullable)\n\
+        \  - programUrl: JSONField (nullable)\n  - provisions: JSONField (nullable)\n\
+        \  - status: JSONField (nullable)\n  - duration: JSONField (nullable)\n  -\
+        \ reason: JSONField (nullable)\n  - country: JSONField (nullable)\n  - listingDate:\
+        \ JSONField (nullable)\n\n- family:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - startDate: JSONField (nullable)\n  - endDate: JSONField\
+        \ (nullable)\n  - date: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - recordId: JSONField (nullable)\n\
+        \  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField (nullable)\n\
+        \  - modifiedAt: JSONField (nullable)\n  - person: JSONField (nullable)\n\
+        \  - relative: JSONField (nullable)\n  - relationship: JSONField (nullable)\n\
+        \n- cryptowallet:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField\
+        \ (nullable)\n  - previousName: JSONField (nullable)\n  - weakAlias: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - wikidataId: JSONField (nullable)\n  - keywords: JSONField\
+        \ (nullable)\n  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n\
+        \  - addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - amount: JSONField (nullable)\n  -\
+        \ currency: JSONField (nullable)\n  - amountUsd: JSONField (nullable)\n  -\
+        \ publicKey: JSONField (nullable)\n  - mangingExchange: JSONField (nullable)\n\
+        \  - holder: JSONField (nullable)\n  - balance: JSONField (nullable)\n\n-\
+        \ succession:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n \
+        \ - startDate: JSONField (nullable)\n  - endDate: JSONField (nullable)\n \
+        \ - date: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - recordId: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - modifiedAt:\
+        \ JSONField (nullable)\n  - role: JSONField (nullable)\n  - status: JSONField\
+        \ (nullable)\n  - predecessor: JSONField (nullable)\n  - successor: JSONField\
+        \ (nullable)\n\n- company:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField\
+        \ (nullable)\n  - previousName: JSONField (nullable)\n  - weakAlias: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - wikidataId: JSONField (nullable)\n  - keywords: JSONField\
+        \ (nullable)\n  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n\
+        \  - addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - amount: JSONField (nullable)\n  -\
+        \ currency: JSONField (nullable)\n  - amountUsd: JSONField (nullable)\n  -\
+        \ email: JSONField (nullable)\n  - phone: JSONField (nullable)\n  - website:\
+        \ JSONField (nullable)\n  - legalForm: JSONField (nullable)\n  - incorporationDate:\
+        \ JSONField (nullable)\n  - dissolutionDate: JSONField (nullable)\n  - status:\
+        \ JSONField (nullable)\n  - sector: JSONField (nullable)\n  - classification:\
+        \ JSONField (nullable)\n  - registrationNumber: JSONField (nullable)\n  -\
+        \ idNumber: JSONField (nullable)\n  - taxNumber: JSONField (nullable)\n  -\
+        \ vatCode: JSONField (nullable)\n  - jurisdiction: JSONField (nullable)\n\
+        \  - mainCountry: JSONField (nullable)\n  - opencorporatesUrl: JSONField (nullable)\n\
+        \  - icijId: JSONField (nullable)\n  - okpoCode: JSONField (nullable)\n  -\
+        \ innCode: JSONField (nullable)\n  - ogrnCode: JSONField (nullable)\n  - leiCode:\
+        \ JSONField (nullable)\n  - dunsCode: JSONField (nullable)\n  - uniqueEntityId:\
+        \ JSONField (nullable)\n  - npiCode: JSONField (nullable)\n  - swiftBic: JSONField\
+        \ (nullable)\n  - parent: JSONField (nullable)\n  - cageCode: JSONField (nullable)\n\
+        \  - permId: JSONField (nullable)\n  - imoNumber: JSONField (nullable)\n \
+        \ - giiNumber: JSONField (nullable)\n  - cikCode: JSONField (nullable)\n \
+        \ - kppCode: JSONField (nullable)\n  - bikCode: JSONField (nullable)\n  -\
+        \ ticker: JSONField (nullable)\n  - ricCode: JSONField (nullable)\n\n- ownership:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - startDate: JSONField\
+        \ (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n\
+        \  - summary: JSONField (nullable)\n  - description: JSONField (nullable)\n\
+        \  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - role: JSONField (nullable)\n  - status: JSONField (nullable)\n  - owner:\
+        \ JSONField (nullable)\n  - asset: JSONField (nullable)\n  - percentage: JSONField\
+        \ (nullable)\n  - sharesCount: JSONField (nullable)\n  - sharesValue: JSONField\
+        \ (nullable)\n  - sharesCurrency: JSONField (nullable)\n\n- vessel:\n  - id:\
+        \ BigAutoField\n  - sanctionEntity: OneToOneField\n  - name: JSONField (nullable)\n\
+        \  - summary: JSONField (nullable)\n  - description: JSONField (nullable)\n\
+        \  - country: JSONField (nullable)\n  - alias: JSONField (nullable)\n  - previousName:\
+        \ JSONField (nullable)\n  - weakAlias: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - wikidataId:\
+        \ JSONField (nullable)\n  - keywords: JSONField (nullable)\n  - topics: JSONField\
+        \ (nullable)\n  - address: JSONField (nullable)\n  - addressEntity: JSONField\
+        \ (nullable)\n  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n\
+        \  - createdAt: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - amount: JSONField (nullable)\n  - currency: JSONField (nullable)\n  -\
+        \ amountUsd: JSONField (nullable)\n  - registrationNumber: JSONField (nullable)\n\
+        \  - type: JSONField (nullable)\n  - model: JSONField (nullable)\n  - owner:\
+        \ JSONField (nullable)\n  - buildDate: JSONField (nullable)\n  - imoNumber:\
+        \ JSONField (nullable)\n  - flag: JSONField (nullable)\n  - tonnage: JSONField\
+        \ (nullable)\n  - grossRegisteredTonnage: JSONField (nullable)\n  - callSign:\
+        \ JSONField (nullable)\n  - pastFlags: JSONField (nullable)\n  - mmsi: JSONField\
+        \ (nullable)\n\n- position:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField\
+        \ (nullable)\n  - previousName: JSONField (nullable)\n  - weakAlias: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - wikidataId: JSONField (nullable)\n  - keywords: JSONField\
+        \ (nullable)\n  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n\
+        \  - addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - inceptionDate: JSONField (nullable)\n\
+        \  - dissolutionDate: JSONField (nullable)\n  - subnationalArea: JSONField\
+        \ (nullable)\n\n- asset:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField\
+        \ (nullable)\n  - previousName: JSONField (nullable)\n  - weakAlias: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - wikidataId: JSONField (nullable)\n  - keywords: JSONField\
+        \ (nullable)\n  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n\
+        \  - addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - amount: JSONField (nullable)\n  -\
+        \ currency: JSONField (nullable)\n  - amountUsd: JSONField (nullable)\n\n\
+        - associate:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  -\
+        \ startDate: JSONField (nullable)\n  - endDate: JSONField (nullable)\n  -\
+        \ date: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - recordId: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - modifiedAt:\
+        \ JSONField (nullable)\n  - person: JSONField (nullable)\n  - associate: JSONField\
+        \ (nullable)\n  - relationship: JSONField (nullable)\n\n- identification:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - startDate: JSONField\
+        \ (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n\
+        \  - summary: JSONField (nullable)\n  - description: JSONField (nullable)\n\
+        \  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - holder: JSONField (nullable)\n  - type: JSONField (nullable)\n  - country:\
+        \ JSONField (nullable)\n  - number: JSONField (nullable)\n  - authority: JSONField\
+        \ (nullable)\n\n- organization:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - country: JSONField (nullable)\n\
+        \  - alias: JSONField (nullable)\n  - previousName: JSONField (nullable)\n\
+        \  - weakAlias: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - wikidataId: JSONField (nullable)\n\
+        \  - keywords: JSONField (nullable)\n  - topics: JSONField (nullable)\n  -\
+        \ address: JSONField (nullable)\n  - addressEntity: JSONField (nullable)\n\
+        \  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n  - createdAt:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - email: JSONField\
+        \ (nullable)\n  - phone: JSONField (nullable)\n  - website: JSONField (nullable)\n\
+        \  - legalForm: JSONField (nullable)\n  - incorporationDate: JSONField (nullable)\n\
+        \  - dissolutionDate: JSONField (nullable)\n  - status: JSONField (nullable)\n\
+        \  - sector: JSONField (nullable)\n  - classification: JSONField (nullable)\n\
+        \  - registrationNumber: JSONField (nullable)\n  - idNumber: JSONField (nullable)\n\
+        \  - taxNumber: JSONField (nullable)\n  - vatCode: JSONField (nullable)\n\
+        \  - jurisdiction: JSONField (nullable)\n  - mainCountry: JSONField (nullable)\n\
+        \  - opencorporatesUrl: JSONField (nullable)\n  - icijId: JSONField (nullable)\n\
+        \  - okpoCode: JSONField (nullable)\n  - innCode: JSONField (nullable)\n \
+        \ - ogrnCode: JSONField (nullable)\n  - leiCode: JSONField (nullable)\n  -\
+        \ dunsCode: JSONField (nullable)\n  - uniqueEntityId: JSONField (nullable)\n\
+        \  - npiCode: JSONField (nullable)\n  - swiftBic: JSONField (nullable)\n \
+        \ - parent: JSONField (nullable)\n  - cageCode: JSONField (nullable)\n  -\
+        \ permId: JSONField (nullable)\n  - imoNumber: JSONField (nullable)\n  - giiNumber:\
+        \ JSONField (nullable)\n\n- airplane:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - country: JSONField (nullable)\n\
+        \  - alias: JSONField (nullable)\n  - previousName: JSONField (nullable)\n\
+        \  - weakAlias: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - wikidataId: JSONField (nullable)\n\
+        \  - keywords: JSONField (nullable)\n  - topics: JSONField (nullable)\n  -\
+        \ address: JSONField (nullable)\n  - addressEntity: JSONField (nullable)\n\
+        \  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n  - createdAt:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - amount:\
+        \ JSONField (nullable)\n  - currency: JSONField (nullable)\n  - amountUsd:\
+        \ JSONField (nullable)\n  - registrationNumber: JSONField (nullable)\n  -\
+        \ type: JSONField (nullable)\n  - model: JSONField (nullable)\n  - owner:\
+        \ JSONField (nullable)\n  - buildDate: JSONField (nullable)\n  - serialNumber:\
+        \ JSONField (nullable)\n\n- publicbody:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n\
+        \  - description: JSONField (nullable)\n  - country: JSONField (nullable)\n\
+        \  - alias: JSONField (nullable)\n  - previousName: JSONField (nullable)\n\
+        \  - weakAlias: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - wikidataId: JSONField (nullable)\n\
+        \  - keywords: JSONField (nullable)\n  - topics: JSONField (nullable)\n  -\
+        \ address: JSONField (nullable)\n  - addressEntity: JSONField (nullable)\n\
+        \  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n  - createdAt:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - email: JSONField\
+        \ (nullable)\n  - phone: JSONField (nullable)\n  - website: JSONField (nullable)\n\
+        \  - legalForm: JSONField (nullable)\n  - incorporationDate: JSONField (nullable)\n\
+        \  - dissolutionDate: JSONField (nullable)\n  - status: JSONField (nullable)\n\
+        \  - sector: JSONField (nullable)\n  - classification: JSONField (nullable)\n\
+        \  - registrationNumber: JSONField (nullable)\n  - idNumber: JSONField (nullable)\n\
+        \  - taxNumber: JSONField (nullable)\n  - vatCode: JSONField (nullable)\n\
+        \  - jurisdiction: JSONField (nullable)\n  - mainCountry: JSONField (nullable)\n\
+        \  - opencorporatesUrl: JSONField (nullable)\n  - icijId: JSONField (nullable)\n\
+        \  - okpoCode: JSONField (nullable)\n  - innCode: JSONField (nullable)\n \
+        \ - ogrnCode: JSONField (nullable)\n  - leiCode: JSONField (nullable)\n  -\
+        \ dunsCode: JSONField (nullable)\n  - uniqueEntityId: JSONField (nullable)\n\
+        \  - npiCode: JSONField (nullable)\n  - swiftBic: JSONField (nullable)\n \
+        \ - parent: JSONField (nullable)\n  - cageCode: JSONField (nullable)\n  -\
+        \ permId: JSONField (nullable)\n  - imoNumber: JSONField (nullable)\n  - giiNumber:\
+        \ JSONField (nullable)\n\n- employment:\n  - id: BigAutoField\n  - sanctionEntity:\
+        \ OneToOneField\n  - details: JSONField (nullable)\n  - role: JSONField (nullable)\n\
+        \  - status: JSONField (nullable)\n  - employer: JSONField (nullable)\n  -\
+        \ employee: JSONField (nullable)\n\n- payment:\n  - id: BigAutoField\n  -\
+        \ sanctionEntity: OneToOneField\n  - payer: JSONField (nullable)\n  - beneficiary:\
+        \ JSONField (nullable)\n  - startDate: JSONField (nullable)\n  - endDate:\
+        \ JSONField (nullable)\n  - date: JSONField (nullable)\n  - summary: JSONField\
+        \ (nullable)\n  - description: JSONField (nullable)\n  - recordId: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - modifiedAt: JSONField (nullable)\n  - amount: JSONField\
+        \ (nullable)\n  - currency: JSONField (nullable)\n  - amountUsd: JSONField\
+        \ (nullable)\n\n- address:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - name: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField\
+        \ (nullable)\n  - previousName: JSONField (nullable)\n  - weakAlias: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - wikidataId: JSONField (nullable)\n  - keywords: JSONField\
+        \ (nullable)\n  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n\
+        \  - addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - full: JSONField (nullable)\n  - remarks:\
+        \ JSONField (nullable)\n  - postOfficeBox: JSONField (nullable)\n  - street:\
+        \ JSONField (nullable)\n  - city: JSONField (nullable)\n  - postalCode: JSONField\
+        \ (nullable)\n  - region: JSONField (nullable)\n  - state: JSONField (nullable)\n\
+        \n- debt:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - debtor:\
+        \ JSONField (nullable)\n  - creditor: JSONField (nullable)\n  - startDate:\
+        \ JSONField (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField\
+        \ (nullable)\n  - summary: JSONField (nullable)\n  - description: JSONField\
+        \ (nullable)\n  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField\
+        \ (nullable)\n  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField\
+        \ (nullable)\n  - amount: JSONField (nullable)\n  - currency: JSONField (nullable)\n\
+        \  - amountUsd: JSONField (nullable)\n\n- unknownlink:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - subject: JSONField (nullable)\n  -\
+        \ object: JSONField (nullable)\n  - startDate: JSONField (nullable)\n  - endDate:\
+        \ JSONField (nullable)\n  - date: JSONField (nullable)\n  - summary: JSONField\
+        \ (nullable)\n  - description: JSONField (nullable)\n  - recordId: JSONField\
+        \ (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField\
+        \ (nullable)\n  - modifiedAt: JSONField (nullable)\n  - role: JSONField (nullable)\n\
+        \  - status: JSONField (nullable)\n\n- passport:\n  - id: BigAutoField\n \
+        \ - sanctionEntity: OneToOneField\n  - holder: JSONField (nullable)\n  - type:\
+        \ JSONField (nullable)\n  - country: JSONField (nullable)\n  - number: JSONField\
+        \ (nullable)\n  - authority: JSONField (nullable)\n  - startDate: JSONField\
+        \ (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n\
+        \  - summary: JSONField (nullable)\n  - description: JSONField (nullable)\n\
+        \  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \n- representation:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - agent: JSONField (nullable)\n  - client: JSONField (nullable)\n  - startDate:\
+        \ JSONField (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField\
+        \ (nullable)\n  - summary: JSONField (nullable)\n  - description: JSONField\
+        \ (nullable)\n  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField\
+        \ (nullable)\n  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField\
+        \ (nullable)\n  - role: JSONField (nullable)\n  - status: JSONField (nullable)\n\
+        \n- occupancy:\n  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n\
+        \  - startDate: JSONField (nullable)\n  - endDate: JSONField (nullable)\n\
+        \  - date: JSONField (nullable)\n  - summary: JSONField (nullable)\n  - description:\
+        \ JSONField (nullable)\n  - recordId: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - modifiedAt:\
+        \ JSONField (nullable)\n  - holder: JSONField (nullable)\n  - post: JSONField\
+        \ (nullable)\n  - status: JSONField (nullable)\n\n- membership:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - startDate: JSONField (nullable)\n\
+        \  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n  - summary:\
+        \ JSONField (nullable)\n  - description: JSONField (nullable)\n  - recordId:\
+        \ JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - role: JSONField\
+        \ (nullable)\n  - status: JSONField (nullable)\n  - member: JSONField (nullable)\n\
+        \  - organization: JSONField (nullable)\n\n- directorship:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - startDate: JSONField (nullable)\n\
+        \  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n  - summary:\
+        \ JSONField (nullable)\n  - description: JSONField (nullable)\n  - recordId:\
+        \ JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n  - role: JSONField\
+        \ (nullable)\n  - status: JSONField (nullable)\n  - director: JSONField (nullable)\n\
+        \  - organization: JSONField (nullable)\n\n- legalentity:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - name: JSONField (nullable)\n  - summary:\
+        \ JSONField (nullable)\n  - description: JSONField (nullable)\n  - country:\
+        \ JSONField (nullable)\n  - alias: JSONField (nullable)\n  - previousName:\
+        \ JSONField (nullable)\n  - weakAlias: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - wikidataId:\
+        \ JSONField (nullable)\n  - keywords: JSONField (nullable)\n  - topics: JSONField\
+        \ (nullable)\n  - address: JSONField (nullable)\n  - addressEntity: JSONField\
+        \ (nullable)\n  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n\
+        \  - createdAt: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - email: JSONField (nullable)\n  - phone: JSONField (nullable)\n  - website:\
+        \ JSONField (nullable)\n  - legalForm: JSONField (nullable)\n  - incorporationDate:\
+        \ JSONField (nullable)\n  - dissolutionDate: JSONField (nullable)\n  - status:\
+        \ JSONField (nullable)\n  - sector: JSONField (nullable)\n  - classification:\
+        \ JSONField (nullable)\n  - registrationNumber: JSONField (nullable)\n  -\
+        \ idNumber: JSONField (nullable)\n  - taxNumber: JSONField (nullable)\n  -\
+        \ vatCode: JSONField (nullable)\n  - jurisdiction: JSONField (nullable)\n\
+        \  - mainCountry: JSONField (nullable)\n  - opencorporatesUrl: JSONField (nullable)\n\
+        \  - icijId: JSONField (nullable)\n  - okpoCode: JSONField (nullable)\n  -\
+        \ innCode: JSONField (nullable)\n  - ogrnCode: JSONField (nullable)\n  - leiCode:\
+        \ JSONField (nullable)\n  - dunsCode: JSONField (nullable)\n  - uniqueEntityId:\
+        \ JSONField (nullable)\n  - npiCode: JSONField (nullable)\n  - swiftBic: JSONField\
+        \ (nullable)\n  - parent: JSONField (nullable)\n\n- security:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - name: JSONField (nullable)\n  - summary:\
+        \ JSONField (nullable)\n  - description: JSONField (nullable)\n  - country:\
+        \ JSONField (nullable)\n  - alias: JSONField (nullable)\n  - previousName:\
+        \ JSONField (nullable)\n  - weakAlias: JSONField (nullable)\n  - sourceUrl:\
+        \ JSONField (nullable)\n  - publisher: JSONField (nullable)\n  - wikidataId:\
+        \ JSONField (nullable)\n  - keywords: JSONField (nullable)\n  - topics: JSONField\
+        \ (nullable)\n  - address: JSONField (nullable)\n  - addressEntity: JSONField\
+        \ (nullable)\n  - program: JSONField (nullable)\n  - notes: JSONField (nullable)\n\
+        \  - createdAt: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - amount: JSONField (nullable)\n  - currency: JSONField (nullable)\n  -\
+        \ amountUsd: JSONField (nullable)\n  - isin: JSONField (nullable)\n  - registrationNumber:\
+        \ JSONField (nullable)\n  - ticker: JSONField (nullable)\n  - figiCode: JSONField\
+        \ (nullable)\n  - issuer: JSONField (nullable)\n  - issueDate: JSONField (nullable)\n\
+        \  - maturityDate: JSONField (nullable)\n  - type: JSONField (nullable)\n\
+        \  - classification: JSONField (nullable)\n\n- interval:\n  - id: BigAutoField\n\
+        \  - sanctionEntity: OneToOneField\n  - startDate: JSONField (nullable)\n\
+        \  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n  - summary:\
+        \ JSONField (nullable)\n  - description: JSONField (nullable)\n  - recordId:\
+        \ JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n  - publisher:\
+        \ JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\n- thing:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - name: JSONField\
+        \ (nullable)\n  - summary: JSONField (nullable)\n  - description: JSONField\
+        \ (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField (nullable)\n\
+        \  - previousName: JSONField (nullable)\n  - weakAlias: JSONField (nullable)\n\
+        \  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField (nullable)\n\
+        \  - wikidataId: JSONField (nullable)\n  - keywords: JSONField (nullable)\n\
+        \  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n  -\
+        \ addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n\n- value:\n  - id: BigAutoField\n  -\
+        \ sanctionEntity: OneToOneField\n  - amount: JSONField (nullable)\n  - currency:\
+        \ JSONField (nullable)\n  - amountUsd: JSONField (nullable)\n\n- interest:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - startDate: JSONField\
+        \ (nullable)\n  - endDate: JSONField (nullable)\n  - date: JSONField (nullable)\n\
+        \  - summary: JSONField (nullable)\n  - description: JSONField (nullable)\n\
+        \  - recordId: JSONField (nullable)\n  - sourceUrl: JSONField (nullable)\n\
+        \  - publisher: JSONField (nullable)\n  - modifiedAt: JSONField (nullable)\n\
+        \  - role: JSONField (nullable)\n  - status: JSONField (nullable)\n\n- vehicle:\n\
+        \  - id: BigAutoField\n  - sanctionEntity: OneToOneField\n  - name: JSONField\
+        \ (nullable)\n  - summary: JSONField (nullable)\n  - description: JSONField\
+        \ (nullable)\n  - country: JSONField (nullable)\n  - alias: JSONField (nullable)\n\
+        \  - previousName: JSONField (nullable)\n  - weakAlias: JSONField (nullable)\n\
+        \  - sourceUrl: JSONField (nullable)\n  - publisher: JSONField (nullable)\n\
+        \  - wikidataId: JSONField (nullable)\n  - keywords: JSONField (nullable)\n\
+        \  - topics: JSONField (nullable)\n  - address: JSONField (nullable)\n  -\
+        \ addressEntity: JSONField (nullable)\n  - program: JSONField (nullable)\n\
+        \  - notes: JSONField (nullable)\n  - createdAt: JSONField (nullable)\n  -\
+        \ modifiedAt: JSONField (nullable)\n  - amount: JSONField (nullable)\n  -\
+        \ currency: JSONField (nullable)\n  - amountUsd: JSONField (nullable)\n  -\
+        \ registrationNumber: JSONField (nullable)\n  - type: JSONField (nullable)\n\
+        \  - model: JSONField (nullable)\n  - owner: JSONField (nullable)\n  - buildDate:\
+        \ JSONField (nullable)\n\n- batchupload:\n  - batch_id: UUIDField\n  - file_name:\
+        \ CharField\n  - status: CharField\n  - success_count: IntegerField\n  - created_at:\
+        \ DateTimeField\n  - updated_at: DateTimeField\n\n- batcherror:\n  - id: BigAutoField\n\
+        \  - batch: ForeignKey\n  - line_number: IntegerField (nullable)\n  - error_message:\
+        \ TextField\n  - created_at: DateTimeField\n        "
+      summary: Match entities against database records
+      tags:
+      - Sanction Query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchEntitiesRequest'
+            examples:
+              ValidRequestWithDynamicFields:
+                value:
+                  queries:
+                    sanctionedentity:
+                      schema: sanctionedentity
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                        sanctionId:
+                        - example_sanctionId
+                        - another_sanctionId
+                        caption:
+                        - example_caption
+                        - another_caption
+                        schema:
+                        - example_schema
+                        - another_schema
+                        first_seen:
+                        - '2024-02-14T12:00:00Z'
+                        last_seen:
+                        - '2024-02-14T12:00:00Z'
+                        last_change:
+                        - '2024-02-14T12:00:00Z'
+                    person:
+                      schema: person
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    sanction:
+                      schema: sanction
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                        recordId:
+                        - example_recordId
+                        - another_recordId
+                    family:
+                      schema: family
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    cryptowallet:
+                      schema: cryptowallet
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    succession:
+                      schema: succession
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    company:
+                      schema: company
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    ownership:
+                      schema: ownership
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    vessel:
+                      schema: vessel
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    position:
+                      schema: position
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    asset:
+                      schema: asset
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    associate:
+                      schema: associate
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    identification:
+                      schema: identification
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    organization:
+                      schema: organization
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    airplane:
+                      schema: airplane
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    publicbody:
+                      schema: publicbody
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    employment:
+                      schema: employment
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    payment:
+                      schema: payment
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    address:
+                      schema: address
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    debt:
+                      schema: debt
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    unknownlink:
+                      schema: unknownlink
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    passport:
+                      schema: passport
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    representation:
+                      schema: representation
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    occupancy:
+                      schema: occupancy
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    membership:
+                      schema: membership
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    directorship:
+                      schema: directorship
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    legalentity:
+                      schema: legalentity
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    security:
+                      schema: security
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    interval:
+                      schema: interval
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    thing:
+                      schema: thing
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    value:
+                      schema: value
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    interest:
+                      schema: interest
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    vehicle:
+                      schema: vehicle
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                    batchupload:
+                      schema: batchupload
+                      properties:
+                        file_name:
+                        - example_file_name
+                        - another_file_name
+                        status:
+                        - example_status
+                        - another_status
+                        success_count:
+                        - '1'
+                        - '2'
+                        created_at:
+                        - '2024-02-14T12:00:00Z'
+                        updated_at:
+                        - '2024-02-14T12:00:00Z'
+                    batcherror:
+                      schema: batcherror
+                      properties:
+                        id:
+                        - '1'
+                        - '2'
+                        line_number:
+                        - '1'
+                        - '2'
+                        error_message:
+                        - example_error_message
+                        - another_error_message
+                        created_at:
+                        - '2024-02-14T12:00:00Z'
+                summary: Valid Request with Dynamic Fields
+                description: Example request showing how to query different models
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchEntitiesRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchEntitiesRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchEntitiesResponse'
+              examples:
+                SuccessfulResponse:
+                  value:
+                    responses:
+                      example_entity:
+                        query:
+                          schema: ExampleModel
+                          properties:
+                            name:
+                            - test
+                            description:
+                            - example
+                        results:
+                        - id: 1
+                          attributes:
+                            id: 1
+                            name: Test Entity
+                            description: Example Description
+                            created_at: '2024-02-14T12:00:00Z'
+                  summary: Successful Response
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchEntitiesError'
+          description: ''
+  /api/ocr/extract/:
+    post:
+      operationId: api_ocr_extract_create
+      description: Handle passport image upload and return extracted data
+      summary: Handle passport image upload and return extracted data
+      tags:
+      - OCR
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Passport image file (JPEG, PNG, etc.)
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Raw OCR Text:
+                    type: string
+                    description: Raw text extracted from the passport using OCR.
+                  Parsed Text Data:
+                    type: object
+                    description: Key passport details parsed from the raw OCR text.
+                    properties:
+                      Given Names:
+                        type: string
+                        description: Given names of the passport holder.
+                      Surname:
+                        type: string
+                        description: Surname of the passport holder.
+                      Passport Number:
+                        type: string
+                        description: Passport number.
+                      Nationality:
+                        type: string
+                        description: Nationality of the passport holder.
+                      Date of Birth:
+                        type: string
+                        description: Date of birth of the passport holder.
+                      Date of Expiry:
+                        type: string
+                        description: Expiry date of the passport.
+                  MRZ Data:
+                    type: object
+                    description: Machine Readable Zone (MRZ) data extracted from the
+                      passport.
+                    properties:
+                      type:
+                        type: string
+                        description: Type of MRZ (e.g., TD1, TD2, TD3).
+                      country:
+                        type: string
+                        description: Issuing country of the passport.
+                      number:
+                        type: string
+                        description: Passport number.
+                      date_of_birth:
+                        type: string
+                        description: Date of birth of the passport holder.
+                      expiration_date:
+                        type: string
+                        description: Expiry date of the passport.
+                      nationality:
+                        type: string
+                        description: Nationality of the passport holder.
+                      surname:
+                        type: string
+                        description: Surname of the passport holder.
+                      given_names:
+                        type: string
+                        description: Given names of the passport holder.
+              examples:
+                SuccessfulOCRExtraction:
+                  value:
+                    Raw OCR Text: |-
+                      Given Names: JOHN
+                      Surname: DOE
+                      Passport No.: A12345678
+                      Nationality: USA
+                      Date of Birth: 21/04/1975
+                      Date of Expiry: 21/04/2025
+                    Parsed Text Data:
+                      Given Names: JOHN
+                      Surname: DOE
+                      Passport Number: A12345678
+                      Nationality: USA
+                      Date of Birth: 21/04/1975
+                      Date of Expiry: 21/04/2025
+                    MRZ Data:
+                      type: TD3
+                      country: USA
+                      number: A12345678
+                      date_of_birth: '750421'
+                      expiration_date: '250421'
+                      nationality: USA
+                      surname: DOE
+                      given_names: JOHN
+                  summary: Successful OCR Extraction
+          description: Passport information extracted successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image:
+                    type: array
+                    items:
+                      type: string
+                    description: Validation errors for the image file.
+              examples:
+                InvalidImageFile:
+                  value:
+                    image:
+                    - No file was submitted.
+                  summary: Invalid Image File
+          description: Bad Request
+  /api/ocr/lookup/:
+    post:
+      operationId: api_ocr_lookup_create
+      description: Handle passport image upload and return extracted data with matching
+        person
+      summary: Handle passport image upload and return extracted data with matching
+        person
+      tags:
+      - OCR
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Passport image file (JPEG, PNG, etc.)
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Raw OCR Text:
+                    type: string
+                    description: Raw text extracted from the passport using OCR.
+                  Parsed Text Data:
+                    type: object
+                    description: Key passport details parsed from the raw OCR text.
+                    properties:
+                      Given Names:
+                        type: string
+                        description: Given names of the passport holder.
+                      Surname:
+                        type: string
+                        description: Surname of the passport holder.
+                      Passport Number:
+                        type: string
+                        description: Passport number.
+                      Nationality:
+                        type: string
+                        description: Nationality of the passport holder.
+                      Date of Birth:
+                        type: string
+                        description: Date of birth of the passport holder.
+                      Date of Expiry:
+                        type: string
+                        description: Expiry date of the passport.
+                  MRZ Data:
+                    type: object
+                    description: Machine Readable Zone (MRZ) data extracted from the
+                      passport.
+                    properties:
+                      type:
+                        type: string
+                        description: Type of MRZ (e.g., TD1, TD2, TD3).
+                      country:
+                        type: string
+                        description: Issuing country of the passport.
+                      number:
+                        type: string
+                        description: Passport number.
+                      date_of_birth:
+                        type: string
+                        description: Date of birth of the passport holder.
+                      expiration_date:
+                        type: string
+                        description: Expiry date of the passport.
+                      nationality:
+                        type: string
+                        description: Nationality of the passport holder.
+                      surname:
+                        type: string
+                        description: Surname of the passport holder.
+                      given_names:
+                        type: string
+                        description: Given names of the passport holder.
+                  matching_person:
+                    type: object
+                    description: Matching person found in the database (if applicable).
+                    properties:
+                      id:
+                        type: integer
+                        description: Unique identifier of the person.
+                      firstName:
+                        type: string
+                        description: First name of the person.
+                      lastName:
+                        type: string
+                        description: Last name of the person.
+                      passportNumber:
+                        type: string
+                        description: Passport number of the person.
+                      birthDate:
+                        type: string
+                        description: Date of birth of the person.
+                      nationality:
+                        type: string
+                        description: Nationality of the person.
+                  match_confidence:
+                    type: number
+                    description: Confidence score of the match (0-100).
+              examples:
+                SuccessfulOCRExtractionWithMatchingPerson:
+                  value:
+                    Raw OCR Text: |-
+                      Given Names: JOHN
+                      Surname: DOE
+                      Passport No.: A12345678
+                      Nationality: USA
+                      Date of Birth: 21/04/1975
+                      Date of Expiry: 21/04/2025
+                    Parsed Text Data:
+                      Given Names: JOHN
+                      Surname: DOE
+                      Passport Number: A12345678
+                      Nationality: USA
+                      Date of Birth: 21/04/1975
+                      Date of Expiry: 21/04/2025
+                    MRZ Data:
+                      type: TD3
+                      country: USA
+                      number: A12345678
+                      date_of_birth: '750421'
+                      expiration_date: '250421'
+                      nationality: USA
+                      surname: DOE
+                      given_names: JOHN
+                    matching_person:
+                      id: 1
+                      firstName: JOHN
+                      lastName: DOE
+                      passportNumber: A12345678
+                      birthDate: '1975-04-21'
+                      nationality: USA
+                    match_confidence: 95.5
+                  summary: Successful OCR Extraction with Matching Person
+                SuccessfulOCRExtractionWithoutMatchingPerson:
+                  value:
+                    Raw OCR Text: |-
+                      Given Names: JANE
+                      Surname: SMITH
+                      Passport No.: B98765432
+                      Nationality: CAN
+                      Date of Birth: 15/08/1980
+                      Date of Expiry: 15/08/2030
+                    Parsed Text Data:
+                      Given Names: JANE
+                      Surname: SMITH
+                      Passport Number: B98765432
+                      Nationality: CAN
+                      Date of Birth: 15/08/1980
+                      Date of Expiry: 15/08/2030
+                    MRZ Data:
+                      type: TD3
+                      country: CAN
+                      number: B98765432
+                      date_of_birth: '800815'
+                      expiration_date: '300815'
+                      nationality: CAN
+                      surname: SMITH
+                      given_names: JANE
+                    matching_person: null
+                    match_confidence: 0
+                  summary: Successful OCR Extraction without Matching Person
+          description: Passport information extracted and matching person found (if
+            applicable).
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image:
+                    type: array
+                    items:
+                      type: string
+                    description: Validation errors for the image file.
+              examples:
+                InvalidImageFile:
+                  value:
+                    image:
+                    - No file was submitted.
+                  summary: Invalid Image File
+          description: Bad Request
+  /api/reconcile/:
+    get:
+      operationId: api_reconcile_retrieve
+      description: Handle GET request for entity reconciliation.
+      summary: Reconcile local data with external ftm.json data
+      parameters:
+      - in: query
+        name: entities
+        schema:
+          type: array
+          items:
+            type: string
+        description: List of entities to reconcile, provided as JSON strings.
+        required: true
+      tags:
+      - Reconcilation
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reconciled_entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique identifier of the matched entity.
+                        name:
+                          type: string
+                          description: Name of the matched entity.
+                        matched_score:
+                          type: number
+                          description: Confidence score of the match (0-1).
+                        match_details:
+                          type: object
+                          description: Details of the match criteria.
+                          properties:
+                            name_match:
+                              type: number
+                              description: Similarity score for name matching (0-1).
+                            birth_date_match:
+                              type: boolean
+                              description: Whether the birth date matched.
+                            nationality_match:
+                              type: boolean
+                              description: Whether the nationality matched.
+              examples:
+                SuccessfulReconciliation:
+                  value:
+                    reconciled_entities:
+                    - id: '1001'
+                      name: John Doe
+                      matched_score: 0.95
+                      match_details:
+                        name_match: 0.95
+                        birth_date_match: true
+                        nationality_match: true
+                    - id: '1002'
+                      name: Jane Smith
+                      matched_score: 0.85
+                      match_details:
+                        name_match: 0.85
+                        birth_date_match: false
+                        nationality_match: false
+                  summary: Successful Reconciliation
+          description: Reconciliation results for the provided entities.
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No entities provided for reconciliation.
+              examples:
+                NoEntitiesProvided:
+                  value:
+                    error: No entities provided for reconciliation.
+                  summary: No Entities Provided
+          description: Bad Request
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Reconciliation failed: <error_message>'
+              examples:
+                InternalServerError:
+                  value:
+                    error: 'Reconciliation failed: <error_message>'
+                  summary: Internal Server Error
+          description: Internal Server Error
+  /api/search/:
+    get:
+      operationId: api_search_retrieve
+      description: Performs a case-insensitive search across text fields of entity
+        models. Results are sorted by relevance score.
+      summary: Search entities across models
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+        description: Filter results by country
+      - in: query
+        name: entity_type
+        schema:
+          type: string
+        description: Filter results by specific entity type (model name)
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+        description: Maximum number of results to return
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search query string
+        required: true
+        examples:
+          ExampleQuery:
+            value: example search
+            summary: Example Query
+      - in: query
+        name: topics
+        schema:
+          type: string
+        description: Filter results by topics
+      tags:
+      - Sanction Query
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  limit:
+                    type: integer
+                    example: 10
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        relevance:
+                          type: number
+                        attributes:
+                          type: object
+                          additionalProperties: true
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: The 'q' parameter is required.
+          description: ''
+  /auth/jwt/create/:
+    post:
+      operationId: auth_jwt_create_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /auth/jwt/refresh/:
+    post:
+      operationId: auth_jwt_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /auth/jwt/verify/:
+    post:
+      operationId: auth_jwt_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /auth/users/:
+    get:
+      operationId: auth_users_list
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: auth_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /auth/users/{id}/:
+    get:
+      operationId: auth_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/activation/:
+    post:
+      operationId: auth_users_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Activation'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activation'
+          description: ''
+  /auth/users/me/:
+    get:
+      operationId: auth_users_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_me_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_me_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_me_destroy
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/resend_activation/:
+    post:
+      operationId: auth_users_resend_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password/:
+    post:
+      operationId: auth_users_reset_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password_confirm/:
+    post:
+      operationId: auth_users_reset_password_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirm'
+          description: ''
+  /auth/users/reset_username/:
+    post:
+      operationId: auth_users_reset_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_username_confirm/:
+    post:
+      operationId: auth_users_reset_username_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResetConfirm'
+          description: ''
+  /auth/users/set_password/:
+    post:
+      operationId: auth_users_set_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPassword'
+          description: ''
+  /auth/users/set_username/:
+    post:
+      operationId: auth_users_set_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetUsername'
+          description: ''
+components:
+  schemas:
+    Activation:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    AdverseMediaInfo:
+      type: object
+      properties:
+        status:
+          type: string
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/Report'
+      required:
+      - reports
+      - status
+    EntityDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Entity name
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (if individual)
+        nationality:
+          type: string
+          description: Nationality
+        id_number:
+          type: string
+          description: Passport, national ID, or company registration number
+        address:
+          type: string
+          description: Residential or operational address
+      required:
+      - address
+      - date_of_birth
+      - id_number
+      - name
+      - nationality
+    GeographyInfo:
+      type: object
+      properties:
+        status:
+          type: string
+        country:
+          type: string
+        reason:
+          type: string
+      required:
+      - country
+      - reason
+      - status
+    MatchEntitiesError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+      - error
+    MatchEntitiesRequest:
+      type: object
+      properties:
+        queries:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          description: Dictionary of entity queries to process
+      required:
+      - queries
+    MatchEntitiesResponse:
+      type: object
+      properties:
+        responses:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          description: Dictionary of matching results for each query
+      required:
+      - responses
+    NotFoundError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PasswordResetConfirm:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+      required:
+      - new_password
+      - token
+      - uid
+    PatchedUser:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+    PepInfo:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    ProcessingError:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required:
+      - details
+      - error
+    Report:
+      type: object
+      properties:
+        source:
+          type: string
+        details:
+          type: string
+      required:
+      - details
+      - source
+    RiskDetails:
+      type: object
+      properties:
+        sanctions:
+          $ref: '#/components/schemas/SanctionsInfo'
+        pep:
+          $ref: '#/components/schemas/PepInfo'
+        geography:
+          $ref: '#/components/schemas/GeographyInfo'
+        adverse_media:
+          $ref: '#/components/schemas/AdverseMediaInfo'
+      required:
+      - adverse_media
+      - geography
+      - pep
+      - sanctions
+    RiskDetailsResponse:
+      type: object
+      properties:
+        entity_id:
+          type: string
+        name:
+          type: string
+        risk_score:
+          type: number
+          format: double
+        risk_category:
+          type: string
+        details:
+          $ref: '#/components/schemas/RiskDetails'
+      required:
+      - details
+      - entity_id
+      - name
+      - risk_category
+      - risk_score
+    RiskScoringRequest:
+      type: object
+      properties:
+        entity:
+          $ref: '#/components/schemas/EntityDetails'
+        transactions:
+          $ref: '#/components/schemas/TransactionDetails'
+      required:
+      - entity
+      - transactions
+    RiskScoringResponse:
+      type: object
+      properties:
+        entity_id:
+          type: string
+        risk_score:
+          type: number
+          format: double
+        risk_category:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+        breakdown:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Detailed breakdown of risk score components
+      required:
+      - breakdown
+      - entity_id
+      - reasons
+      - risk_category
+      - risk_score
+    SanctionsInfo:
+      type: object
+      properties:
+        status:
+          type: string
+        datasets:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+          format: double
+      required:
+      - confidence
+      - datasets
+      - status
+    SendEmailReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    SetPassword:
+      type: object
+      properties:
+        new_password:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+    SetUsername:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - current_password
+      - new_username
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    TransactionDetails:
+      type: object
+      properties:
+        volume:
+          type: number
+          format: double
+          description: Amount of transactions in a specific period
+        frequency:
+          type: integer
+          description: Number of transactions in a specific period
+      required:
+      - frequency
+      - volume
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+      required:
+      - id
+      - username
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - id
+      - password
+      - username
+    UsernameResetConfirm:
+      type: object
+      properties:
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - new_username
+    ValidationError:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties: {}
+          description: Validation errors
+      required:
+      - errors
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

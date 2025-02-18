@@ -3,6 +3,13 @@ import uuid
 
 from django.apps import apps
 from django.db import transaction
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -24,7 +31,76 @@ class UploadDataView(APIView):
     
     def get_serializer(self):
         return FileUploadSerializer()
+    
+    @extend_schema(
+        summary="Upload ftm.json file as batch",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'JSON file containing entities data',
+                    }
+                }
+            }
+        },
+        responses={
+            200: OpenApiResponse(
+                description="File processed successfully.",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "batch_id": {"type": "string", "format": "uuid"},
+                        "message": {"type": "string"},
+                        "success_count": {"type": "integer"},
+                        "errors": {"type": "integer"},
+                    }
+                }
+            ),
+            400: OpenApiResponse(
+                description="Bad Request",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string"},
+                    }
+                }
+            ),
+            500: OpenApiResponse(
+                description="Internal Server Error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string"},
+                        "batch_id": {"type": "string", "format": "uuid"},
+                    }
+                }
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                name="Successful Upload",
+                value={
+                    "batch_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "message": "File processed successfully.",
+                    "success_count": 100,
+                    "errors": 2,
+                },
+                status_codes=['200'],
+            ),
+            OpenApiExample(
+                name="Invalid File Type",
+                value={
+                    "error": "Invalid file type. Only JSON files are allowed.",
+                },
+                status_codes=['400'],
+            ),
+        ],
+    tags=["Batch Processing"]
 
+    )
     def post(self, request):
         file = request.FILES.get("file")
         if not file:
@@ -123,7 +199,79 @@ class BatchStatusView(APIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    
+    @extend_schema(
+        summary="Get the status of batch upload",
+        parameters=[
+            OpenApiParameter(
+                name='batch_id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the batch upload',
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Batch status retrieved successfully.",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "batch_id": {"type": "string", "format": "uuid"},
+                        "status": {"type": "string"},
+                        "file_name": {"type": "string"},
+                        "success_count": {"type": "integer"},
+                        "created_at": {"type": "string", "format": "date-time"},
+                        "updated_at": {"type": "string", "format": "date-time"},
+                        "errors": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "line_number": {"type": "integer"},
+                                    "error_message": {"type": "string"},
+                                }
+                            }
+                        },
+                    }
+                }
+            ),
+            404: OpenApiResponse(
+                description="Not Found",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string"},
+                    }
+                }
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                name="Batch Status",
+                value={
+                    "batch_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "status": "completed",
+                    "file_name": "entities.json",
+                    "success_count": 100,
+                    "created_at": "2023-10-01T12:34:56Z",
+                    "updated_at": "2023-10-01T12:35:10Z",
+                    "errors": [
+                        {"line_number": 5, "error_message": "Invalid JSON format"},
+                        {"line_number": 10, "error_message": "Missing required field"},
+                    ],
+                },
+                status_codes=['200'],
+            ),
+            OpenApiExample(
+                name="Batch Not Found",
+                value={
+                    "error": "Batch ID not found.",
+                },
+                status_codes=['404'],
+            ),
+        ],
+        
+    tags=["Batch Processing"]
+    )
     def get(self, request, batch_id):
         try:
             batch_upload = BatchUpload.objects.get(batch_id=batch_id)

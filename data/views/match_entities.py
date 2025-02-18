@@ -158,7 +158,8 @@ class MatchEntitiesView(APIView):
                 },
                 response_only=True
             )
-        ]
+        ],
+        tags=["Sanction Query"]
     )
     def post(self, request, *args, **kwargs):
         queries = request.data.get("queries", {})
