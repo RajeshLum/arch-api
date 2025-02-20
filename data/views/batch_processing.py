@@ -2,6 +2,7 @@ import json
 import threading
 import uuid
 
+import pyclamd
 from django.apps import apps
 from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
@@ -34,15 +35,37 @@ class FileUploadSerializer(Serializer):
     def validate_file(self, value):
         allowed_mime_types = ['application/json', 'text/csv']
         allowed_extensions = ['.json', '.csv']
-        
+
         mime_type = value.content_type
         file_name = value.name.lower()
 
         if mime_type not in allowed_mime_types or not any(file_name.endswith(ext) for ext in allowed_extensions):
             raise ValidationError("Only JSON and CSV files are allowed.")
 
+        # Scan the file for viruses using ClamAV
+        if self.scan_file(value):
+            raise ValidationError("The uploaded file contains a virus and has been rejected.")
+
         return value
 
+    def scan_file(self, file):
+        """Scan the file using ClamAV"""
+        try:
+            clam = pyclamd.ClamdUnixSocket()
+            if not clam.ping():
+                raise Exception("ClamAV daemon is not running.")
+
+            # Scan file data
+            result = clam.scan_stream(file.read())
+            file.seek(0)  # Reset file pointer after reading
+
+            if result:
+                return True  # File is infected
+
+        except Exception as e:
+            raise ValidationError(f"Virus scan error: {str(e)}")
+
+        return False  # File is clean
 
 class BatchUploadSerializer(ModelSerializer):
     class Meta:
