@@ -1,6 +1,6 @@
 from django.urls import path
 
-from data.views.batch_processing import BatchStatusView, UploadDataView
+from data.views.batch_processing2 import BatchStatusView, UploadDataView
 from data.views.entity_details import EntityDetailView
 from data.views.ocr import PassportOCRView
 from data.views.ocr_aml import PassportOCRLookup
