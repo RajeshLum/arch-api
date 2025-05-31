@@ -3030,3 +3030,77 @@ class VehicleAdmin(ModelAdmin):
         )
 
     modifiedAt_display.short_description = "Modified At"
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "phone", "gender", "dob", "organization", "photo", 
+                    'created_at', 'updated_at')
+    search_fields = ("user__username", "phone", "organization")
+    list_filter = ("gender", "dob")
+    actions = ['delete_selected'] 
+    
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ("id", "first_name", "last_name", "email", "phone", "dob", "gender", 
+                    "nationality", "address", "tax_id", "photo", 'status', 
+                    'created_at', 'updated_at')
+    
+@admin.register(Identity)
+class IdentityAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "id_type", "id_number", "issuing_country",  "issue_date", "expiry_date", "document", 
+                    'created_at', 'updated_at')
+    
+@admin.register(Employability)
+class EmployabilityAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "status", "occupation", "employer_name",  "employer_address", "annual_income", 
+                    'created_at', 'updated_at')
+    
+@admin.register(BankInfo)
+class BankInfoAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "bank_name", "account_number", "account_type", "swift_code_iban",  
+                    'created_at', 'updated_at')
+    
+@admin.register(CustomerAdditionalInfo)
+class CustomerAdditionalInfo(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "account_purpose", "expected_transactions", "annual_turnover", "fund_source", "pep_status",  
+                    'created_at', 'updated_at')
+    
+@admin.register(BusinessInfo)
+class BusinessInfoAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "business_type", "business_name", "regi_number", "incorporation_date", "incorporation_country", 
+                    "registered_address", "operational_address", "phone", "email", "website", 
+                    "industry_sector", "key_products_services", "business_activities_desc", 
+                    'created_at', 'updated_at')
+
+@admin.register(Verification)
+class VerificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "id_type", "document", 'status', 
+                    'created_at', 'updated_at')
+
+@admin.register(FlagApproval)
+class FlagApprovalAdmin(admin.ModelAdmin):
+    list_display = ("id", "verification_id", 'status', 
+                    "reason_type", 'details', "forwarded_to", "forward_message", 
+                    'created_at', 'updated_at')
+    
+@admin.register(ResearchRequest)
+class ResearchRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "customer_id", "document", 'status', 
+                    'priority', "research_type", "subject", "description",
+                    'created_at', 'updated_at')
+
+@admin.register(ActivityLogs)
+class ActivityLogsAdmin(admin.ModelAdmin):
+    list_display = ("id", 'activity', 'description', 'ip_address', 'location', 'status', 
+                    'created_at', 'updated_at')
+    list_filter = ('activity', 'status', 'location')
+    search_fields = ('description', 'ip_address', 'location', 'user__username')
+    ordering = ('-updated_at',)
+
+@admin.register(SearchHistory)
+class SearchHistoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'query', 'result_count', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('query', 'user__username', 'user__email')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at',)

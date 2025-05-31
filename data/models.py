@@ -1,6 +1,13 @@
 from django.db import models
 from django.utils import timezone
 
+from .amlmodels.profile_model import Profile
+from .amlmodels.customer_models import Customer, Identity, Employability, BankInfo, CustomerAdditionalInfo, BusinessInfo
+from .amlmodels.verification_models import Verification
+from .amlmodels.flag_approval_models import FlagApproval
+from .amlmodels.research_request_model import ResearchRequest
+from .amlmodels.activity_logs_model import ActivityLogs
+from .amlmodels.search_history_model import SearchHistory
 
 class SanctionedEntity(models.Model):
     sanctionId = models.TextField(unique=True)

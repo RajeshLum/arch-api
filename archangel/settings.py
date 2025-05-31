@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "djoser",
     "drf_spectacular",
     "rest_framework_simplejwt",
+    'corsheaders',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -30,6 +31,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
@@ -123,6 +125,12 @@ INTERNAL_IPS = [
     "0.0.0.0",
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Your frontend URL
+]
+
+# If you're using credentials (cookies, auth headers, etc.)
+CORS_ALLOW_CREDENTIALS = True
 
 UNFOLD = {
     "SITE_TITLE": "Arch Angel Data Lake",
@@ -197,6 +205,72 @@ UNFOLD = {
                         "title": "Sanctioned Entities",
                         "icon": "stacks",
                         "link": reverse_lazy("admin:data_sanctionedentity_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Custom",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Profile",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:data_profile_changelist"),
+                    },
+                    {
+                        "title": "Customer",
+                        "icon": "people",
+                        "link": reverse_lazy("admin:data_customer_changelist"),
+                    },
+                    {
+                        "title": "Customer Identification",
+                        "icon": "directions_boat",
+                        "link": reverse_lazy("admin:data_identity_changelist"),
+                    },
+                    {
+                        "title": "Employability",
+                        "icon": "work",
+                        "link": reverse_lazy("admin:data_employability_changelist"),
+                    },
+                    {
+                        "title": "Bank Info",
+                        "icon": "account_balance",
+                        "link": reverse_lazy("admin:data_bankinfo_changelist"),
+                    },
+                    {
+                        "title": "Customer Addi Information",
+                        "icon": "info",
+                        "link": reverse_lazy("admin:data_customeradditionalinfo_changelist"),
+                    },
+                    {
+                        "title": "Customer Business Details",
+                        "icon": "business",
+                        "link": reverse_lazy("admin:data_businessinfo_changelist"),
+                    },
+                    {
+                        "title": "Verification",
+                        "icon": "verified",
+                        "link": reverse_lazy("admin:data_verification_changelist"),
+                    },
+                    {
+                        "title": "Flag Approval",
+                        "icon": "flag",
+                        "link": reverse_lazy("admin:data_flagapproval_changelist"),
+                    },
+                    {
+                        "title": "Research Request",
+                        "icon": "search",
+                        "link": reverse_lazy("admin:data_researchrequest_changelist"),
+                    },
+                    {
+                        "title": "Activity Logs",
+                        "icon": "event_note",
+                        "link": reverse_lazy("admin:data_activitylogs_changelist"),
+                    },
+                    {
+                        "title": "Search History",
+                        "icon": "manage_search",
+                        "link": reverse_lazy("admin:data_searchhistory_changelist"),
                     },
                 ],
             },
@@ -365,7 +439,6 @@ UNFOLD = {
     },
 }
 
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -374,15 +447,13 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-
 }
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-} 
-
+}
 
 
 SPECTACULAR_SETTINGS = {
