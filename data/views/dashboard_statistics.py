@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from data.amlmodels.customer_models import Customer
 from data.amlmodels.flag_approval_models import FlagApproval
 from data.amlmodels.verification_models import Verification
+from data.amlmodels.aml_services_models import AmlService
 
 class DashboardStatisticsView(APIView):
     """
@@ -114,6 +115,38 @@ class DashboardStatisticsView(APIView):
                 'results': verifications_data
             }
             
+            # Get service statistics
+            services = AmlService.objects.all()
+            service_stats = []
+            
+            # For each service, get verification statistics
+            for service in services:
+                # Get total verifications for this service
+                total_service_verifications = Verification.objects.filter(service_id=service.id).count()
+                
+                # Get verifications by status for this service
+                status_counts = Verification.objects.filter(
+                    service_id=service.id
+                ).values('status').annotate(
+                    count=Count('status')
+                ).order_by('status')
+                
+                # Format status counts
+                status_data = {}
+                for item in status_counts:
+                    status_key = item['status'] if item['status'] else 'unknown'
+                    status_data[status_key] = item['count']
+                
+                # Add service stats to the result
+                service_stats.append({
+                    'id': service.id,
+                    'service_name': service.service_name,
+                    'service_category': service.service_category,
+                    'service_category_display': service.get_service_category_display(),
+                    'total_verifications': total_service_verifications,
+                    'verification_by_status': status_data
+                })
+            
             # Get monthly compliance statistics for the last 6 months
             end_date = datetime.now()
             start_date = end_date - timedelta(days=180)  # Approximately 6 months
@@ -158,6 +191,7 @@ class DashboardStatisticsView(APIView):
                         'by_status': verification_by_status,
                         'paginated_data': verifications_pagination
                     },
+                    'services': service_stats,
                     'compliance': compliance_data
                 }
             }

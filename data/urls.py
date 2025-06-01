@@ -24,6 +24,7 @@ from data.views.aml_services import AmlServiceListCreateView, AmlServiceDetailVi
 from data.views.activity_logs import ActivityLogsView
 from data.views.dashboard_statistics import DashboardStatisticsView
 from data.views.search_history import SearchHistoryListCreateView, SearchHistoryDetailView, SearchHistoryClearView, RecentSearchHistoryView
+from data.views.service_statistics import ServiceStatisticsView
 
 urlpatterns = [
     path('match/', MatchEntitiesView.as_view(), name='match-entities'), # post
@@ -80,4 +81,7 @@ urlpatterns = [
     # aml services
     path('aml-services/', AmlServiceListCreateView.as_view(), name='aml-service-list-create'),
     path('aml-services/<int:pk>/', AmlServiceDetailView.as_view(), name='aml-service-detail'),
+    
+    # service statistics
+    path('service-statistics/', ServiceStatisticsView.as_view(), name='service-statistics'),
 ]
