@@ -60,7 +60,7 @@ class VerificationListCreateView(APIView):
             'user': request.user.id,
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
-            'service_id': request.data.get('service_id', 0),
+            'service_id': request.data.get('service_id', 1),
             'document': file_paths,
             'status': 'pending',
         }

@@ -24,7 +24,7 @@ class Customer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="customers")
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
-    email = models.EmailField(max_length=50, blank=True, unique=True)
+    email = models.EmailField(max_length=50, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     dob = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)

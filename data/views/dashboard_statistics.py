@@ -97,26 +97,47 @@ class DashboardStatisticsView(APIView):
             paginator = PageNumberPagination()
             paginator.page_size = page_size
             
-            # Get verifications ordered by most recent first
-            verifications_queryset = Verification.objects.all().order_by('-created_at')
-            paginated_verifications = paginator.paginate_queryset(verifications_queryset, request)
+            verifications = Verification.objects.all().order_by('-created_at')
+            paginated_verifications = paginator.paginate_queryset(verifications, request)
             
-            # Format verification data
+            # Format paginated verifications data
             verifications_data = []
             for verification in paginated_verifications:
-                verification_data = {
+                # Get customer info as a string
+                customer_info = ""
+                if verification.customer_id:
+                    try:
+                        customer = Customer.objects.filter(id=verification.customer_id).first()
+                        if customer:
+                            customer_info = f"{customer.first_name} {customer.last_name} ({customer.email})".strip()
+                    except Exception:
+                        pass
+                
+                # Get service name if service_id is available
+                service_name = ""
+                if verification.service_id:
+                    try:
+                        service = AmlService.objects.filter(id=verification.service_id).first()
+                        if service:
+                            service_name = service.service_name
+                    except Exception:
+                        pass
+                
+                verifications_data.append({
                     'id': verification.id,
                     'customer_id': verification.customer_id,
+                    'customer_info': customer_info,
                     'id_type': verification.id_type,
+                    'service_id': verification.service_id,
+                    'service_name': service_name,
                     'status': verification.status,
-                    'created_at': verification.created_at.isoformat() if verification.created_at else None,
-                    'updated_at': verification.updated_at.isoformat() if verification.updated_at else None
-                }
-                verifications_data.append(verification_data)
-                
+                    'created_at': verification.created_at.isoformat(),
+                    'updated_at': verification.updated_at.isoformat()
+                })
+            
             # Create pagination response
             verifications_pagination = {
-                'count': verifications_queryset.count(),
+                'count': paginator.page.paginator.count,
                 'next': paginator.get_next_link(),
                 'previous': paginator.get_previous_link(),
                 'results': verifications_data

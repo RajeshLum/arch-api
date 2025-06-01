@@ -112,7 +112,7 @@ class CustomerListCreateView(APIView):
         """Create a new customer for the authenticated user"""
         data = request.data.copy()
         data['user'] = request.user.id
-        data['status'] = 'approved'
+        data['status'] = 'pending'
 
         serializer = CustomerSerializer(data=data)
         if serializer.is_valid():
