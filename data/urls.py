@@ -3,6 +3,7 @@ from django.urls import path
 from .views.match_entities import MatchEntitiesView
 from data.views.entity_details import EntityDetailView
 from .views.search_entities import SearchEntitiesView
+from .views.list_models import ListModelsView
 
 from data.views.batch_processing2 import UploadDataView, BatchStatusView
 from data.views.reconcile import ReconcileView
@@ -84,4 +85,7 @@ urlpatterns = [
     
     # service statistics
     path('service-statistics/', ServiceStatisticsView.as_view(), name='service-statistics'),
+    
+    # list models
+    path('models/', ListModelsView.as_view(), name='list-models'),
 ]

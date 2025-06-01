@@ -71,11 +71,18 @@ class DashboardStatisticsView(APIView):
             # Get verification statistics by status
             verification_stats = Verification.objects.values('status').annotate(count=Count('status')).order_by('status')
             
-            # Format verification statistics
+            # Format verification statistics with counts and percentages in a single structure
             verification_by_status = {}
+            
             for stat in verification_stats:
                 status_key = stat['status'] if stat['status'] else 'unknown'
-                verification_by_status[status_key] = stat['count']
+                count = stat['count']
+                percentage = (count / total_verifications) * 100 if total_verifications > 0 else 0
+                
+                verification_by_status[status_key] = {
+                    'count': count,
+                    'percentage': round(percentage, 2)
+                }
             
             # Get paginated verifications data
             page = request.query_params.get('page', 1)
@@ -131,11 +138,18 @@ class DashboardStatisticsView(APIView):
                     count=Count('status')
                 ).order_by('status')
                 
-                # Format status counts
+                # Format status counts with percentages in a single structure
                 status_data = {}
+                
                 for item in status_counts:
                     status_key = item['status'] if item['status'] else 'unknown'
-                    status_data[status_key] = item['count']
+                    count = item['count']
+                    percentage = (count / total_service_verifications) * 100 if total_service_verifications > 0 else 0
+                    
+                    status_data[status_key] = {
+                        'count': count,
+                        'percentage': round(percentage, 2)
+                    }
                 
                 # Add service stats to the result
                 service_stats.append({
