@@ -101,38 +101,12 @@ class CustomerListCreateView(APIView):
         # Safety check (but paginator should return a list, not None, if set up correctly)
         if paginated_queryset is None:
             return Response({"message": "Pagination failed."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Build enriched customer response
-        enriched_data = []
-        for customer in paginated_queryset:
-            customer_data = {
-                "customer": CustomerSerializer(customer).data,
-            }
-
-            identity = Identity.objects.filter(customer=customer).first()
-            if identity:
-                customer_data["identity"] = IdentitySerializer(identity).data
-
-            employability = Employability.objects.filter(customer=customer).first()
-            if employability:
-                customer_data["employability"] = EmployabilitySerializer(employability).data
-
-            bank_info = BankInfo.objects.filter(customer=customer).first()
-            if bank_info:
-                customer_data["bank_info"] = BankInfoSerializer(bank_info).data
-
-            additional_info = CustomerAdditionalInfo.objects.filter(customer=customer).first()
-            if additional_info:
-                customer_data["customer_additional_info"] = CustomerAdditionalInfoSerializer(additional_info).data
-
-            business_info = BusinessInfo.objects.filter(customer=customer).first()
-            if business_info:
-                customer_data["business_info"] = BusinessInfoSerializer(business_info).data
-
-            enriched_data.append(customer_data)
-
+    
+        # Serialize the paginated queryset
+        serialized_data = CustomerSerializer(paginated_queryset, many=True).data
+        
         # Return paginated response
-        return paginator.get_paginated_response(enriched_data)
+        return paginator.get_paginated_response(serialized_data)
     
     def post(self, request):
         """Create a new customer for the authenticated user"""

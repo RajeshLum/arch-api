@@ -33,6 +33,9 @@ class Customer(models.Model):
     tax_id = models.CharField(max_length=20, blank=True, null=True)
     photo = models.ImageField(upload_to=customer_photo_path, blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, null=True)
+    is_flagged = models.BooleanField(default=False)
+    success_attempts = models.IntegerField(default=0)
+    failed_attempts = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -19,6 +19,7 @@ from data.views.customer.customer_registration import CustomerListCreateView, Cu
 from data.views.verification.verify_document import VerificationListCreateView, VerificationDetailView
 from data.views.flag_approval import FlagApprovalListCreateView, FlagApprovalDetailView
 from data.views.research_request import ResearchRequestListCreateView, ResearchRequestDetailView
+from data.views.aml_services import AmlServiceListCreateView, AmlServiceDetailView
 
 from data.views.activity_logs import ActivityLogsView
 from data.views.dashboard_statistics import DashboardStatisticsView
@@ -75,4 +76,8 @@ urlpatterns = [
     path('search-history/<int:pk>/', SearchHistoryDetailView.as_view(), name='search-history-detail'),
     path('search-history/clear/', SearchHistoryClearView.as_view(), name='search-history-clear'),
     path('search-history/recent/', RecentSearchHistoryView.as_view(), name='search-history-recent'),
+    
+    # aml services
+    path('aml-services/', AmlServiceListCreateView.as_view(), name='aml-service-list-create'),
+    path('aml-services/<int:pk>/', AmlServiceDetailView.as_view(), name='aml-service-detail'),
 ]

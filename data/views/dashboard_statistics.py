@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status as http_status
+from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -9,8 +10,6 @@ from datetime import datetime, timedelta
 from data.amlmodels.customer_models import Customer
 from data.amlmodels.flag_approval_models import FlagApproval
 from data.amlmodels.verification_models import Verification
-from data.amlmodels.search_history_model import SearchHistory
-from data.serializers.search_history_serializer import SearchHistorySerializer
 
 class DashboardStatisticsView(APIView):
     """
@@ -31,12 +30,8 @@ class DashboardStatisticsView(APIView):
             # Count flagged cases
             flagged_cases = FlagApproval.objects.count()
             
-            # Get recent search history (limited to 5)
-            recent_searches = []
-            if request.user.is_authenticated:
-                user_searches = SearchHistory.objects.filter(user=request.user).order_by('-created_at')[:5]
-                serializer = SearchHistorySerializer(user_searches, many=True)
-                recent_searches = serializer.data
+            # Get total verifications
+            total_verifications = Verification.objects.count()
             
             # Get latest 10 flagged customers
             latest_flagged = FlagApproval.objects.select_related('user').order_by('-created_at')[:10]
@@ -81,8 +76,43 @@ class DashboardStatisticsView(APIView):
                 status_key = stat['status'] if stat['status'] else 'unknown'
                 verification_by_status[status_key] = stat['count']
             
-            # Get total verifications
-            total_verifications = sum(verification_by_status.values())
+            # Get paginated verifications data
+            page = request.query_params.get('page', 1)
+            page_size = request.query_params.get('page_size', 10)
+            try:
+                page = int(page)
+                page_size = int(page_size)
+            except (TypeError, ValueError):
+                page = 1
+                page_size = 10
+                
+            paginator = PageNumberPagination()
+            paginator.page_size = page_size
+            
+            # Get verifications ordered by most recent first
+            verifications_queryset = Verification.objects.all().order_by('-created_at')
+            paginated_verifications = paginator.paginate_queryset(verifications_queryset, request)
+            
+            # Format verification data
+            verifications_data = []
+            for verification in paginated_verifications:
+                verification_data = {
+                    'id': verification.id,
+                    'customer_id': verification.customer_id,
+                    'id_type': verification.id_type,
+                    'status': verification.status,
+                    'created_at': verification.created_at.isoformat() if verification.created_at else None,
+                    'updated_at': verification.updated_at.isoformat() if verification.updated_at else None
+                }
+                verifications_data.append(verification_data)
+                
+            # Create pagination response
+            verifications_pagination = {
+                'count': verifications_queryset.count(),
+                'next': paginator.get_next_link(),
+                'previous': paginator.get_previous_link(),
+                'results': verifications_data
+            }
             
             # Get monthly compliance statistics for the last 6 months
             end_date = datetime.now()
@@ -118,15 +148,15 @@ class DashboardStatisticsView(APIView):
             data = {
                 'message': 'Dashboard statistics retrieved successfully',
                 'data': {
+                    'total_verifications': total_verifications,
                     'total_customers': total_customers,
                     'flagged_cases': flagged_cases,
-                    'total_transactions': 0,
                     'recent_activity': 0,
-                    'recent_searches': recent_searches,
                     'latest_flagged_customers': flagged_customers,
                     'verification': {
                         'total': total_verifications,
-                        'by_status': verification_by_status
+                        'by_status': verification_by_status,
+                        'paginated_data': verifications_pagination
                     },
                     'compliance': compliance_data
                 }
