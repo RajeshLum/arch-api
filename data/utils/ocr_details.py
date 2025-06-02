@@ -1,8 +1,15 @@
 import re
+import os
+import platform
 
 import cv2
 import pytesseract
 from passporteye import read_mrz
+
+# Configure Tesseract path for Windows
+if platform.system() == 'Windows':
+    # Update this path to where you installed Tesseract
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 def extract_text_from_passport(image_path):

@@ -187,7 +187,13 @@ class PassportOCRLookup(APIView):
         
         if serializer.is_valid():
             image = request.FILES['image']
-            image_path = "/tmp/" + image.name  
+            
+            # Create uploads directory if it doesn't exist
+            upload_dir = os.path.join('media', 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Save the image to media/uploads folder
+            image_path = os.path.join(upload_dir, image.name)
             with open(image_path, 'wb') as f:
                 for chunk in image.chunks():
                     f.write(chunk)
@@ -209,7 +215,9 @@ class PassportOCRLookup(APIView):
                     passport_info['MRZ Data']
                 )
             
-            os.remove(image_path)
+            # Keep the file in the uploads folder and add the path to the response
+            response_data['image_path'] = image_path
+            
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

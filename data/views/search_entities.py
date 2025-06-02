@@ -1,6 +1,8 @@
 import operator
 from functools import reduce
-from typing import List
+from typing import List, Any, Dict
+from datetime import datetime, date
+from decimal import Decimal
 
 from django.apps import apps
 from django.db.models import Model, Q
@@ -147,14 +149,21 @@ class SearchEntitiesView(APIView):
 
                 for result in query_results:
                     relevance_score = self.calculate_relevance(query_string, result)
+                    # Create a serializable dictionary of attributes
+                    attributes = {}
+                    for field in result._meta.fields:
+                        try:
+                            field_value = getattr(result, field.name)
+                            attributes[field.name] = self.serialize_field(field_value)
+                        except Exception as e:
+                            attributes[field.name] = f"Error serializing: {str(e)}"
+                    
                     results.append({
                         "id": result.id,
                         "name": str(result),
                         "relevance": relevance_score,
-                        "attributes": {
-                            field.name: self.serialize_field(getattr(result, field.name))
-                            for field in result._meta.fields
-                        },
+                        "attributes": attributes,
+                        "model_type": result._meta.model_name
                     })
 
             except Exception as e:
@@ -178,14 +187,61 @@ class SearchEntitiesView(APIView):
         )
         return round(match_count / total_fields, 2) if total_fields else 0.0
 
-    def serialize_field(self, value):
+    def serialize_field(self, value: Any) -> Any:
+        """Recursively serialize a value to ensure it's JSON serializable"""
         try:
-            if isinstance(value, Model):
-                return str(value)
-            elif isinstance(value, (list, dict)):
+            # Handle None
+            if value is None:
+                return None
+                
+            # Handle basic JSON-serializable types
+            if isinstance(value, (str, int, float, bool)):
                 return value
-            elif hasattr(value, "__dict__"):
-                return {k: v for k, v in value.__dict__.items() if not k.startswith("_")}
-            return value
+                
+            # Handle decimal values
+            if isinstance(value, Decimal):
+                return float(value)
+                
+            # Handle date and datetime objects
+            if isinstance(value, (datetime, date)):
+                return value.isoformat()
+                
+            # Handle Django model instances
+            if isinstance(value, Model):
+                return {
+                    'id': value.id if hasattr(value, 'id') else None,
+                    'type': value.__class__.__name__,
+                    'str_representation': str(value)
+                }
+                
+            # Handle lists and tuples recursively
+            if isinstance(value, (list, tuple)):
+                return [self.serialize_field(item) for item in value]
+                
+            # Handle dictionaries recursively
+            if isinstance(value, dict):
+                return {k: self.serialize_field(v) for k, v in value.items()}
+                
+            # Handle sets by converting to list first
+            if isinstance(value, set):
+                return [self.serialize_field(item) for item in value]
+                
+            # Handle objects with __dict__ attribute (custom classes)
+            if hasattr(value, '__dict__'):
+                # Convert to dict and recursively serialize each attribute
+                obj_dict = {}
+                for k, v in value.__dict__.items():
+                    # Skip private attributes and callables
+                    if not k.startswith('_') and not callable(v):
+                        try:
+                            obj_dict[k] = self.serialize_field(v)
+                        except:
+                            obj_dict[k] = str(v)
+                return obj_dict
+                
+            # For any other type, convert to string
+            return str(value)
+            
         except Exception as e:
+            # Return a string representation as fallback
             return f"Serialization error: {str(e)}"
