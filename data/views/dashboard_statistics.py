@@ -125,6 +125,8 @@ class DashboardStatisticsView(APIView):
                 
                 verifications_data.append({
                     'id': verification.id,
+                    'reference_id': verification.reference_id or '',
+                    'country': verification.country_id or '',
                     'customer_id': verification.customer_id,
                     'info': customer_info,
                     'id_type': verification.id_type,

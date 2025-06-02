@@ -12,9 +12,11 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
 from data.models import Verification
+from data.amlmodels.verification_metadata_models import VerificationMetadata
 from data.serializers.verification import VerificationSerializer
-from data.utils.geolocation import get_user_country
+from data.utils.geolocation import get_user_country, get_client_ip
 from data.utils.reference_generator import generate_reference_id
+from data.utils.user_agent_parser import parse_user_agent
 
 # list, add
 class VerificationListCreateView(APIView):
@@ -77,7 +79,24 @@ class VerificationListCreateView(APIView):
             
         serializer = VerificationSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            verification = serializer.save(user=request.user)
+            
+            # Store user IP and browser information
+            ip_address = get_client_ip(request)
+            user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+            user_agent_data = parse_user_agent(user_agent_string)
+            
+            # Create metadata record
+            VerificationMetadata.objects.create(
+                verification=verification,
+                ip_address=ip_address,
+                user_agent=user_agent_string,
+                browser=user_agent_data['browser'],
+                browser_version=user_agent_data['browser_version'],
+                os=user_agent_data['os'],
+                device=user_agent_data['device']
+            )
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -140,11 +159,9 @@ class VerificationDetailView(APIView):
             update_data['document'] = verification.document
         
         serializer = VerificationSerializer(verification, data=update_data, partial=True)
-        
         if serializer.is_valid():
-            serializer.save()
+            verification = serializer.save()
             return Response(serializer.data)
-        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
