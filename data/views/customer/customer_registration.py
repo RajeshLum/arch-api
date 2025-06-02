@@ -86,15 +86,28 @@ class CustomerListCreateView(APIView):
         return paginator.get_paginated_response(serializer.data)
     
     def get(self, request):
-        # Get queryset based on user role
+        # Get queryset based on user role, ordered by latest created_at
         if request.user.is_staff:
-            queryset = Customer.objects.all()
+            queryset = Customer.objects.all().order_by('-created_at')
         else:
-            queryset = Customer.objects.filter(user=request.user)
+            queryset = Customer.objects.filter(user=request.user).order_by('-created_at')
 
-        # Initialize paginator
+        # Get dynamic page and limit parameters from request
+        try:
+            page = int(request.query_params.get('page', 1))
+        except (TypeError, ValueError):
+            page = 1
+            
+        try:
+            page_size = int(request.query_params.get('limit', 20))
+            # Cap page size to reasonable limits
+            page_size = min(max(page_size, 1), 100)  # Between 1 and 100
+        except (TypeError, ValueError):
+            page_size = 20
+
+        # Initialize paginator with dynamic page size
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = page_size
         
         paginated_queryset = paginator.paginate_queryset(queryset, request)
 

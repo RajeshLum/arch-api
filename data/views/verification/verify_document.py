@@ -14,6 +14,8 @@ from django.core.files.base import ContentFile
 from data.models import Verification
 from data.amlmodels.verification_metadata_models import VerificationMetadata
 from data.amlmodels.verification_timeline_models import VerificationTimeline
+from data.amlmodels.customer_models import Customer
+from data.amlmodels.aml_services_models import AmlService
 from data.serializers.verification import VerificationSerializer
 from data.serializers.verification_metadata import VerificationMetadataSerializer
 from data.serializers.verification_timeline import VerificationTimelineSerializer
@@ -46,9 +48,53 @@ class VerificationListCreateView(APIView):
         paginator = PageNumberPagination()
         paginator.page_size = 20
         paginated_qs = paginator.paginate_queryset(queryset, request)
-
-        serializer = VerificationSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        
+        # Format paginated verifications data with service_name and customer info
+        verifications_data = []
+        for verification in paginated_qs:
+            # Get customer info as a string
+            customer_info = ""
+            if verification.customer_id:
+                try:
+                    customer = Customer.objects.filter(id=verification.customer_id).first()
+                    if customer:
+                        customer_info = f"{customer.first_name} {customer.last_name} ({customer.email})".strip()
+                except Exception:
+                    pass
+            
+            # Get service name if service_id is available
+            service_name = ""
+            if verification.service_id:
+                try:
+                    service = AmlService.objects.filter(id=verification.service_id).first()
+                    if service:
+                        service_name = service.service_name
+                except Exception:
+                    pass
+            
+            verifications_data.append({
+                'id': verification.id,
+                'reference_id': verification.reference_id or '',
+                'country': verification.country_id or '',
+                'customer_id': verification.customer_id,
+                'info': customer_info,
+                'id_type': verification.id_type,
+                'service_id': verification.service_id,
+                'service_name': service_name,
+                'status': verification.status,
+                'created_at': verification.created_at.isoformat(),
+                'updated_at': verification.updated_at.isoformat()
+            })
+        
+        # Create custom paginated response
+        response = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': verifications_data
+        }
+        
+        return Response(response)
     
     def post(self, request):
         """Create a new verification for the authenticated user"""
