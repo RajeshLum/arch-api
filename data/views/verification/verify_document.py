@@ -13,6 +13,7 @@ from django.core.files.base import ContentFile
 
 from data.models import Verification
 from data.serializers.verification import VerificationSerializer
+from data.utils.geolocation import get_user_country
 
 # list, add
 class VerificationListCreateView(APIView):
@@ -56,10 +57,14 @@ class VerificationListCreateView(APIView):
             path = default_storage.save(f'uploads/document/verifications/{filename}', ContentFile(file.read()))
             file_paths.append(path)
 
+        # Get user's country code from IP or header
+        country_code = get_user_country(request)
+        
         data = {
             'user': request.user.id,
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
+            'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
             'service_id': request.data.get('service_id', 1),
             'document': file_paths,
             'status': 'pending',
@@ -95,9 +100,13 @@ class VerificationDetailView(APIView):
         """Update a specific verification (partial update)"""
         verification = self.get_verification(pk, request.user)
         
+        # Get user's country code from IP or header if not already provided
+        country_code = get_user_country(request)
+        
         update_data = {
             'customer_id': request.data.get('customer_id', verification.customer_id),
             'id_type': request.data.get('id_type', verification.id_type),
+            'country_id': request.data.get('country_id', verification.country_id or country_code),
             'service_id': request.data.get('service_id', verification.service_id),
             'status': request.data.get('status', verification.status),
         }
