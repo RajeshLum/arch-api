@@ -251,6 +251,7 @@ class Verification(models.Model):
     service_id = models.IntegerField(default=0)
     customer_id = models.CharField(max_length=20, blank=True, null=True)
     id_type = models.CharField(max_length=20, choices=ID_TYPES, blank=True, null=True)
+    is_manual_review = models.BooleanField(default=False, help_text="Indicates if this verification requires manual review")
     document = models.JSONField(default=list)
     status = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

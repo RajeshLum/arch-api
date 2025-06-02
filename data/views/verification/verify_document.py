@@ -69,6 +69,11 @@ class VerificationListCreateView(APIView):
         # Generate a unique reference ID
         reference_id = generate_reference_id(16)
         
+        # Determine if manual review is required
+        is_manual_review = request.data.get('is_manual_review', False)
+        if isinstance(is_manual_review, str):
+            is_manual_review = is_manual_review.lower() in ['true', 'yes', '1']
+        
         data = {
             'user': request.user.id,
             'reference_id': reference_id,
@@ -78,6 +83,7 @@ class VerificationListCreateView(APIView):
             'service_id': request.data.get('service_id', 1),
             'document': file_paths,
             'status': 'pending',
+            'is_manual_review': is_manual_review,
         }
             
         serializer = VerificationSerializer(data=data)
@@ -152,12 +158,18 @@ class VerificationDetailView(APIView):
         # Get user's country code from IP or header if not already provided
         country_code = get_user_country(request)
         
+        # Handle is_manual_review field - convert string values to boolean
+        is_manual_review = request.data.get('is_manual_review', verification.is_manual_review)
+        if isinstance(is_manual_review, str):
+            is_manual_review = is_manual_review.lower() in ['true', 'yes', '1']
+        
         update_data = {
             'customer_id': request.data.get('customer_id', verification.customer_id),
             'id_type': request.data.get('id_type', verification.id_type),
             'country_id': request.data.get('country_id', verification.country_id or country_code),
             'service_id': request.data.get('service_id', verification.service_id),
             'status': request.data.get('status', verification.status),
+            'is_manual_review': is_manual_review,
         }
 
         files = request.FILES.getlist('document')
