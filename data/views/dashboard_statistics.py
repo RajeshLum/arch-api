@@ -126,7 +126,7 @@ class DashboardStatisticsView(APIView):
                 verifications_data.append({
                     'id': verification.id,
                     'customer_id': verification.customer_id,
-                    'customer_info': customer_info,
+                    'info': customer_info,
                     'id_type': verification.id_type,
                     'service_id': verification.service_id,
                     'service_name': service_name,

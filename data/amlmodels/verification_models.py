@@ -246,6 +246,7 @@ class Verification(models.Model):
     )
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="verifications")
+    reference_id = models.CharField(max_length=16, unique=True, blank=True, null=True)
     country_id = models.CharField(max_length=20, choices=COUNTRIES, blank=True, null=True)
     service_id = models.IntegerField(default=0)
     customer_id = models.CharField(max_length=20, blank=True, null=True)

@@ -14,6 +14,7 @@ from django.core.files.base import ContentFile
 from data.models import Verification
 from data.serializers.verification import VerificationSerializer
 from data.utils.geolocation import get_user_country
+from data.utils.reference_generator import generate_reference_id
 
 # list, add
 class VerificationListCreateView(APIView):
@@ -60,8 +61,12 @@ class VerificationListCreateView(APIView):
         # Get user's country code from IP or header
         country_code = get_user_country(request)
         
+        # Generate a unique reference ID
+        reference_id = generate_reference_id(16)
+        
         data = {
             'user': request.user.id,
+            'reference_id': reference_id,
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
