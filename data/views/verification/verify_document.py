@@ -14,6 +14,7 @@ from django.core.files.base import ContentFile
 from data.models import Verification
 from data.amlmodels.verification_metadata_models import VerificationMetadata
 from data.serializers.verification import VerificationSerializer
+from data.serializers.verification_metadata import VerificationMetadataSerializer
 from data.utils.geolocation import get_user_country, get_client_ip
 from data.utils.reference_generator import generate_reference_id
 from data.utils.user_agent_parser import parse_user_agent
@@ -114,11 +115,19 @@ class VerificationDetailView(APIView):
         return get_object_or_404(Verification, pk=pk, user=user)
 
     def get(self, request, pk):
-        """Retrieve a specific verification"""
+        """Retrieve a specific verification with its metadata"""
         verification = self.get_verification(pk, request.user)
-        serializer = VerificationSerializer(verification)
+        verification_data = VerificationSerializer(verification).data
         
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Get metadata if it exists
+        try:
+            metadata = VerificationMetadata.objects.get(verification=verification)
+            metadata_serializer = VerificationMetadataSerializer(metadata)
+            verification_data['metadata'] = metadata_serializer.data
+        except VerificationMetadata.DoesNotExist:
+            verification_data['metadata'] = None
+        
+        return Response(verification_data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
         """Update a specific verification (partial update)"""
