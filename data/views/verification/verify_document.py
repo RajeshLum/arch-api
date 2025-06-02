@@ -40,13 +40,26 @@ class VerificationListCreateView(APIView):
 
     def get(self, request):
         if request.user.is_staff:
-            queryset = Verification.objects.all().order_by('-id')
+            queryset = Verification.objects.all().order_by('-created_at')
         else:
-            queryset = Verification.objects.filter(user=request.user).order_by('-id')
+            queryset = Verification.objects.filter(user=request.user).order_by('-created_at')
 
-        # Apply pagination manually
+        # Get dynamic page and limit parameters from request
+        try:
+            page = int(request.query_params.get('page', 1))
+        except (TypeError, ValueError):
+            page = 1
+            
+        try:
+            page_size = int(request.query_params.get('limit', 20))
+            # Cap page size to reasonable limits
+            page_size = min(max(page_size, 1), 100)  # Between 1 and 100
+        except (TypeError, ValueError):
+            page_size = 20
+
+        # Apply pagination manually with dynamic page size
         paginator = PageNumberPagination()
-        paginator.page_size = 20
+        paginator.page_size = page_size
         paginated_qs = paginator.paginate_queryset(queryset, request)
         
         # Format paginated verifications data with service_name and customer info
