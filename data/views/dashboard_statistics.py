@@ -109,7 +109,7 @@ class DashboardStatisticsView(APIView):
                     try:
                         customer = Customer.objects.filter(id=verification.customer_id).first()
                         if customer:
-                            customer_info = f"{customer.first_name} {customer.last_name} ({customer.email})".strip()
+                            customer_info = f"{customer.first_name} {customer.last_name}".strip()
                     except Exception:
                         pass
                 
