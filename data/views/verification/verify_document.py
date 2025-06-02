@@ -94,6 +94,8 @@ class VerificationListCreateView(APIView):
                 'id_type': verification.id_type,
                 'service_id': verification.service_id,
                 'service_name': service_name,
+                'is_manual_review': verification.is_manual_review,
+                'document': verification.document,
                 'status': verification.status,
                 'created_at': verification.created_at.isoformat(),
                 'updated_at': verification.updated_at.isoformat()
@@ -140,7 +142,7 @@ class VerificationListCreateView(APIView):
             'id_type': request.data.get('id_type', ''),
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
             'service_id': request.data.get('service_id', 1),
-            'document': file_paths,
+            'document': request.data.get('document_path', file_paths),
             'status': 'pending',
             'is_manual_review': is_manual_review,
         }
