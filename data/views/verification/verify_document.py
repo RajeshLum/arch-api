@@ -13,8 +13,10 @@ from django.core.files.base import ContentFile
 
 from data.models import Verification
 from data.amlmodels.verification_metadata_models import VerificationMetadata
+from data.amlmodels.verification_timeline_models import VerificationTimeline
 from data.serializers.verification import VerificationSerializer
 from data.serializers.verification_metadata import VerificationMetadataSerializer
+from data.serializers.verification_timeline import VerificationTimelineSerializer
 from data.utils.geolocation import get_user_country, get_client_ip
 from data.utils.reference_generator import generate_reference_id
 from data.utils.user_agent_parser import parse_user_agent
@@ -98,6 +100,15 @@ class VerificationListCreateView(APIView):
                 device=user_agent_data['device']
             )
             
+            # Create initial timeline entry
+            VerificationTimeline.objects.create(
+                verification=verification,
+                status='pending',
+                action='created',
+                notes='Verification created with pending status',
+                performed_by=request.user
+            )
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -115,7 +126,7 @@ class VerificationDetailView(APIView):
         return get_object_or_404(Verification, pk=pk, user=user)
 
     def get(self, request, pk):
-        """Retrieve a specific verification with its metadata"""
+        """Retrieve a specific verification with its metadata and timeline"""
         verification = self.get_verification(pk, request.user)
         verification_data = VerificationSerializer(verification).data
         
@@ -126,6 +137,11 @@ class VerificationDetailView(APIView):
             verification_data['metadata'] = metadata_serializer.data
         except VerificationMetadata.DoesNotExist:
             verification_data['metadata'] = None
+        
+        # Get timeline entries
+        timeline_entries = VerificationTimeline.objects.filter(verification=verification).order_by('-created_at')
+        timeline_serializer = VerificationTimelineSerializer(timeline_entries, many=True)
+        verification_data['timeline'] = timeline_serializer.data
         
         return Response(verification_data, status=status.HTTP_200_OK)
 
@@ -167,9 +183,24 @@ class VerificationDetailView(APIView):
         else:
             update_data['document'] = verification.document
         
+        # Check if status is being updated
+        status_changed = 'status' in update_data and update_data['status'] != verification.status
+        old_status = verification.status
+        
         serializer = VerificationSerializer(verification, data=update_data, partial=True)
         if serializer.is_valid():
             verification = serializer.save()
+            
+            # Add timeline entry if status changed
+            if status_changed:
+                VerificationTimeline.objects.create(
+                    verification=verification,
+                    status=verification.status,
+                    action='status_updated',
+                    notes=f'Status updated from {old_status} to {verification.status}',
+                    performed_by=request.user
+                )
+            
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
