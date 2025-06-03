@@ -4,5 +4,5 @@ aml
 raw-data
 db.sqlite3
 __pycache__/
-#logs/
+logs/
 django_debug.log

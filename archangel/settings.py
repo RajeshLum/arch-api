@@ -127,6 +127,7 @@ INTERNAL_IPS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Your frontend URL
+    "https://app.angfins.com",
 ]
 
 # If you're using credentials (cookies, auth headers, etc.)
