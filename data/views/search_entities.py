@@ -16,6 +16,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import *
 from ..amlmodels.verification_models import Verification
+from ..amlmodels.verification_metadata_models import VerificationInfo
 from ..amlmodels.verification_timeline_models import VerificationTimeline
 
 
@@ -138,11 +139,13 @@ class SearchEntitiesView(APIView):
                 )
         
         results = []
+        screening_models = []
 
         for model in models:
             try:
                 # print(f"Looping model: {model.__name__}")
-                
+                screening_models.append(model.__name__)
+
                 # Only search 'name' field if it exists
                 if any(field.name == 'name' for field in model._meta.fields):
                     search_fields = [Q(name__contains=[query_string])]
@@ -231,12 +234,34 @@ class SearchEntitiesView(APIView):
                     notes=f'Search performed with query: {query_string}',
                     performed_by=request.user
                 )
+                
+                # --- VerificationInfo integration ---
+                is_found = bool(results)
+                found_models = []
+                for result in results:
+                    found_models.append({
+                        "model": result.get("model_type"),
+                        "id": result.get("id"),
+                        "sanction_entity_id": (
+                            result["attributes"].get("sanctionEntity", {}).get("id")
+                            if "attributes" in result and isinstance(result["attributes"].get("sanctionEntity"), dict)
+                            else result["attributes"].get("sanctionId") if "attributes" in result else None
+                        )
+                    })
+                    
+                VerificationInfo.objects.create(
+                    verification_id=verification_id,
+                    screening_models=screening_models,
+                    is_found=is_found,
+                    found_models=found_models
+                )
+                # --- End VerificationInfo integration ---
             except Verification.DoesNotExist:
                 # If verification doesn't exist, just continue without creating timeline entry
                 pass
             except Exception as e:
                 # Log the error but don't interrupt the response
-                print(f"Error creating verification timeline: {str(e)}")
+                print(f"Error creating verification timeline or info: {str(e)}")
 
         return Response({"limit": limit, "results": results}, status=status.HTTP_200_OK)
 

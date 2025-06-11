@@ -209,7 +209,86 @@ class VerificationDetailView(APIView):
         timeline_entries = VerificationTimeline.objects.filter(verification=verification).order_by('-created_at')
         timeline_serializer = VerificationTimelineSerializer(timeline_entries, many=True)
         verification_data['timeline'] = timeline_serializer.data
-        
+
+        # Get verification_info if it exists
+        from data.amlmodels.verification_metadata_models import VerificationInfo
+        try:
+            verification_info = VerificationInfo.objects.get(verification_id=verification.id)
+            found_models_with_extra = []
+            from data.models import SanctionedEntity
+            from data.serializers.entity_details import EntityDetailSerializer
+            from django.apps import apps
+            from django.forms.models import model_to_dict
+            from collections import defaultdict
+
+            # Step 1: Collect ids by model name
+            model_id_map = defaultdict(set)
+            for fm in verification_info.found_models or []:
+                model_name = fm.get('model')
+                entity_id = fm.get('id')
+                if model_name and entity_id:
+                    model_id_map[model_name.lower()].add(entity_id)
+
+            # Step 2: Bulk fetch all needed instances
+            model_instance_map = {}
+            for model_name, ids in model_id_map.items():
+                ModelClass = None
+                for m in apps.get_app_config('data').get_models():
+                    if m.__name__.lower() == model_name:
+                        ModelClass = m
+                        break
+                if ModelClass:
+                    instances = ModelClass.objects.filter(id__in=ids)
+                    for instance in instances:
+                        model_instance_map[(model_name, instance.id)] = instance
+
+            # Helper to recursively remove keys with None values
+            def remove_nulls(obj):
+                if isinstance(obj, dict):
+                    return {k: remove_nulls(v) for k, v in obj.items() if v is not None}
+                elif isinstance(obj, list):
+                    return [remove_nulls(v) for v in obj if v is not None]
+                else:
+                    return obj
+
+            for fm in verification_info.found_models or []:
+                fm_copy = dict(fm)
+                extra = {}
+                # Add SanctionedEntity details if sanction_entity_id exists
+                sanction_entity_id = fm.get('sanction_entity_id')
+                if sanction_entity_id:
+                    try:
+                        sanctioned_entity = SanctionedEntity.objects.get(id=sanction_entity_id)
+                        sanctioned_entity_data = EntityDetailSerializer(sanctioned_entity).to_dict()
+                        if sanctioned_entity_data is not None:
+                            cleaned = remove_nulls(sanctioned_entity_data)
+                            if 'linkedEntities' in cleaned:
+                                del cleaned['linkedEntities']
+                            extra['sanctioned_entity'] = cleaned
+                    except SanctionedEntity.DoesNotExist:
+                        pass  # Do not add null
+                # Add related model details using model name (schema) and id using pre-fetched map
+                model_name = fm.get('model')
+                entity_id = fm.get('id')
+                if model_name and entity_id:
+                    instance = model_instance_map.get((model_name.lower(), entity_id))
+                    if instance is not None:
+                        extra['entity'] = remove_nulls(model_to_dict(instance))
+                fm_copy['extra'] = extra
+                found_models_with_extra.append(fm_copy)
+
+            verification_data['verification_info'] = {
+                'id': verification_info.id,
+                'verification_id': verification_info.verification_id,
+                'screening_models': verification_info.screening_models,
+                'is_found': verification_info.is_found,
+                'found_models': found_models_with_extra,
+                'created_at': verification_info.created_at,
+                'updated_at': verification_info.updated_at,
+            }
+        except VerificationInfo.DoesNotExist:
+            verification_data['verification_info'] = None
+
         return Response(verification_data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
