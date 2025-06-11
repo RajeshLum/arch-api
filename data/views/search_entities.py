@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from django.apps import apps
 from django.db.models import Model, Q
+from django.db.models.functions import Cast
+from django.db.models import CharField
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
@@ -111,7 +113,7 @@ class SearchEntitiesView(APIView):
         query_string = request.query_params.get("q", "").strip()
         countries = [c.lower() for c in request.query_params.getlist("countries[]")]
         entity_types = request.query_params.getlist("entity_types[]")
-        topics = request.query_params.get("topics")
+        registration_number = request.query_params.get("registration_number")
         
 
         if not query_string:
@@ -162,8 +164,9 @@ class SearchEntitiesView(APIView):
                     if country_q:
                         filters.append(reduce(operator.or_, country_q))
 
-                if topics:
-                    filters.append(Q(topics__icontains=topics))
+                if registration_number:
+                    # Cast registrationNumber to string for comparison
+                    filters.append(Q(**{'registrationNumber__icontains': str(registration_number)}) | Q(**{'registrationNumber__isnull': False}) & Q(**{'registrationNumber__in': [registration_number, str(registration_number)]}))
 
                 combined_query = reduce(operator.or_, search_fields)
          
@@ -218,8 +221,16 @@ class SearchEntitiesView(APIView):
                 customer_data.pop("dob")
             serializer = CustomerSerializer(data=customer_data)
             if serializer.is_valid():
-                serializer.save(user=request.user)
+                customer_instance = serializer.save(user=request.user)
                 results = []  # Do not return the new customer
+                # Update Verification.customer_id if verification_id is provided
+                if verification_id:
+                    try:
+                        verification_obj = Verification.objects.get(id=verification_id)
+                        verification_obj.customer_id = customer_instance.id
+                        verification_obj.save(update_fields=["customer_id"])
+                    except Verification.DoesNotExist:
+                        pass
             else:
                 return Response({"error": "Customer creation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
