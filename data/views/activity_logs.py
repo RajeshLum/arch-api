@@ -5,6 +5,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import ActivityLogs
 from data.serializers.activity_logs import ActivityLogsSerializer
+from data.utils.geolocation import get_user_country, get_client_ip
+from data.utils.user_agent_parser import parse_user_agent
 
 class ActivityLogsView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -21,16 +23,38 @@ class ActivityLogsView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        """Create an activity log"""
-        data = request.data.copy()
-        data['user'] = request.user.id
-        serializer = ActivityLogsSerializer(data=data)
-        
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """Create an activity log using logic consistent with activity_logs_signals.py"""
+        from django.utils import timezone
+
+        ip_address = get_client_ip(request)
+        country = get_user_country(request)
+        city = ''  # Add city detection if available
+        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+        user_agent_data = parse_user_agent(user_agent_string)
+
+        # Use provided data or sensible defaults
+        activity = request.data.get('activity', 'OTHER')
+        description = request.data.get('description', 'Random activity log')
+        status_value = request.data.get('status', 'SUCCESS')
+
+        log = ActivityLogs.objects.create(
+            user=request.user,
+            activity=activity,
+            description=description,
+            ip_address=ip_address,
+            country=country,
+            city=city,
+            browser=user_agent_data.get('browser', ''),
+            browser_version=user_agent_data.get('browser_version', ''),
+            os=user_agent_data.get('os', ''),
+            device=user_agent_data.get('device', ''),
+            status=status_value,
+            created_at=timezone.now(),
+            updated_at=timezone.now(),
+        )
+
+        serializer = ActivityLogsSerializer(log)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def delete(self, request):
         """Delete a specific activity log by ID (admin: any, user: only their own)"""

@@ -3091,10 +3091,10 @@ class ResearchRequestAdmin(admin.ModelAdmin):
 
 @admin.register(ActivityLogs)
 class ActivityLogsAdmin(admin.ModelAdmin):
-    list_display = ("id", 'activity', 'description', 'ip_address', 'location', 'status', 
+    list_display = ("id", 'activity', 'description', 'ip_address', 'country', 'city', 'status', 
                     'created_at', 'updated_at')
-    list_filter = ('activity', 'status', 'location')
-    search_fields = ('description', 'ip_address', 'location', 'user__username')
+    list_filter = ('activity', 'status', 'country', 'city')
+    search_fields = ('description', 'ip_address', 'country', 'city', 'user__username')
     ordering = ('-updated_at',)
 
 @admin.register(SearchHistory)

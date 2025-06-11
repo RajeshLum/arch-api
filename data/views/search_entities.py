@@ -15,6 +15,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import *
+from ..amlmodels.verification_models import Verification
+from ..amlmodels.verification_timeline_models import VerificationTimeline
 
 
 class SearchEntitiesView(APIView):
@@ -100,12 +102,16 @@ class SearchEntitiesView(APIView):
         },
         tags=["Sanction Query"]
     )
+    
     def get(self, request, *args, **kwargs):
-        query_string = request.query_params.get("q", "").strip()
         limit = int(request.query_params.get("limit", 10))
-        entity_type = request.query_params.get("entity_type") 
-        country = request.query_params.get("country") 
-        topics = request.query_params.get("topics") 
+        verification_id = request.query_params.get("verification_id")
+        
+        query_string = request.query_params.get("q", "").strip()
+        countries = [c.lower() for c in request.query_params.getlist("countries[]")]
+        entity_types = request.query_params.getlist("entity_types[]")
+        topics = request.query_params.get("topics")
+        
 
         if not query_string:
             return Response(
@@ -113,35 +119,51 @@ class SearchEntitiesView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        app_config = apps.get_app_config("data") 
-        models = app_config.get_models()
-
-        if entity_type:
+        app_config = apps.get_app_config("data")
+        models = [
+            m for m in app_config.get_models()
+            if m.__module__ == "data.models" and m.__name__ != "BatchUpload" and m.__name__ != "BatchError"
+        ]
+        
+        if entity_types:
             try:
-                models = [apps.get_model(app_label="data", model_name=entity_type)]
-            except LookupError:
+                models = [
+                    apps.get_model(app_label="data", model_name=et)
+                    for et in entity_types
+                ]
+            except LookupError as e:
                 return Response(
-                    {"error": f"Model '{entity_type}' not found."},
+                    {"error": f"Model not found: {str(e)}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
+        
         results = []
 
         for model in models:
             try:
-                search_fields = [
-                    Q(**{f"{field.name}__icontains": query_string})
-                    for field in model._meta.fields
-                    if field.get_internal_type() in ["CharField", "TextField"]
-                ]
+                # print(f"Looping model: {model.__name__}")
                 
+                # Only search 'name' field if it exists
+                if any(field.name == 'name' for field in model._meta.fields):
+                    search_fields = [Q(name__contains=[query_string])]
+                else:
+                    continue  # Skip models without a 'name' field
+
                 filters = []
-                if country:
-                    filters.append(Q(country__icontains=country))
+                if countries:
+                    country_q = []
+                    if any(field.name == 'country' for field in model._meta.fields):
+                        country_q.extend([Q(country__contains=[c]) for c in countries])
+                    if any(field.name == 'countryName' for field in model._meta.fields):
+                        country_q.extend([Q(countryName__icontains=c) for c in countries])
+                    if country_q:
+                        filters.append(reduce(operator.or_, country_q))
+
                 if topics:
                     filters.append(Q(topics__icontains=topics))
 
                 combined_query = reduce(operator.or_, search_fields)
+         
                 if filters:
                     combined_query &= reduce(operator.and_, filters)
 
@@ -158,6 +180,7 @@ class SearchEntitiesView(APIView):
                         except Exception as e:
                             attributes[field.name] = f"Error serializing: {str(e)}"
                     
+                    
                     results.append({
                         "id": result.id,
                         "name": str(result),
@@ -171,7 +194,51 @@ class SearchEntitiesView(APIView):
 
         results = sorted(results, key=lambda x: x["relevance"], reverse=True)
 
-        return Response({"limit": limit, "results": results[:limit]}, status=status.HTTP_200_OK)
+        # If no results, create a customer from q and dob, but do not return the customer in results
+        if not results:
+            from data.models import Customer
+            from data.serializers.customer import CustomerSerializer
+            q = query_string
+            dob = request.query_params.get("dob")
+            names = q.split()
+            first_name = names[0] if names else ""
+            last_name = " ".join(names[1:]) if len(names) > 1 else ""
+            customer_data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "dob": dob,
+                "user": request.user.id,
+                "status": "pending"
+            }
+            # Remove dob if not provided
+            if not dob:
+                customer_data.pop("dob")
+            serializer = CustomerSerializer(data=customer_data)
+            if serializer.is_valid():
+                serializer.save(user=request.user)
+                results = []  # Do not return the new customer
+            else:
+                return Response({"error": "Customer creation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create VerificationTimeline entry if verification_id is provided
+        if verification_id:
+            try:
+                verification = Verification.objects.get(id=verification_id)
+                VerificationTimeline.objects.create(
+                    verification=verification,
+                    status=verification.status,
+                    action='search_performed',
+                    notes=f'Search performed with query: {query_string}',
+                    performed_by=request.user
+                )
+            except Verification.DoesNotExist:
+                # If verification doesn't exist, just continue without creating timeline entry
+                pass
+            except Exception as e:
+                # Log the error but don't interrupt the response
+                print(f"Error creating verification timeline: {str(e)}")
+
+        return Response({"limit": limit, "results": results}, status=status.HTTP_200_OK)
 
     def calculate_relevance(self, query, result):
         """
