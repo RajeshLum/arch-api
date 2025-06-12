@@ -4,6 +4,8 @@ from pprint import pprint
 
 import cv2
 import pytesseract
+# Set Tesseract path for Windows
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -198,26 +200,35 @@ class PassportOCRLookup(APIView):
                 for chunk in image.chunks():
                     f.write(chunk)
 
-            # Extract passport information
-            passport_info = extract_passport_info(image_path)
-            
-            # Find matching person using MRZ data
-            matching_person = None
-            if passport_info['MRZ Data']:
-                matching_person = find_matching_person(passport_info['MRZ Data'])
-            
-            # Add matching person to response if found
-            response_data = passport_info
-            if matching_person:
-                response_data['matching_person'] = PersonSerializer(matching_person).data
-                response_data['match_confidence'] = calculate_person_match_score(
-                    matching_person, 
-                    passport_info['MRZ Data']
-                )
-            
+            # Determine document type
+            doc_type = request.data.get('type')
+            if not doc_type:
+                return Response({'error': 'Missing required field: type (passport or nid)'}, status=status.HTTP_400_BAD_REQUEST)
+            doc_type = doc_type.lower()
+
+            if doc_type == 'passport':
+                info = extract_passport_info(image_path)
+                # Find matching person using MRZ data
+                matching_person = None
+                if info['MRZ Data']:
+                    matching_person = find_matching_person(info['MRZ Data'])
+                response_data = info
+                if matching_person:
+                    response_data['matching_person'] = PersonSerializer(matching_person).data
+                    response_data['match_confidence'] = calculate_person_match_score(
+                        matching_person,
+                        info['MRZ Data']
+                    )
+            elif doc_type == 'nid':
+                from data.utils.ocr_details import extract_nid_info
+                info = extract_nid_info(image_path)
+                response_data = info
+            else:
+                return Response({'error': 'Invalid type. Supported: passport, nid'}, status=status.HTTP_400_BAD_REQUEST)
+
             # Keep the file in the uploads folder and add the path to the response
-            response_data['image_path'] = image_path
-            
+            # Ensure image_path uses forward slashes for cross-platform compatibility
+            response_data['image_path'] = image_path.replace('\\', '/').replace('\\', '/') if isinstance(image_path, str) else image_path
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
