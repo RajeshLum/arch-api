@@ -21,6 +21,7 @@ from data.views.verification.verify_document import VerificationListCreateView, 
 from data.views.flag_approval import FlagApprovalListCreateView, FlagApprovalDetailView
 from data.views.research_request import ResearchRequestListCreateView, ResearchRequestDetailView
 from data.views.aml_services import AmlServiceListCreateView, AmlServiceDetailView
+from data.views.custom_status import CustomStatusListCreateView, CustomStatusDetailView
 
 from data.views.activity_logs import ActivityLogsView
 from data.views.dashboard_statistics import DashboardStatisticsView
@@ -82,6 +83,10 @@ urlpatterns = [
     # aml services
     path('aml-services/', AmlServiceListCreateView.as_view(), name='aml-service-list-create'),
     path('aml-services/<int:pk>/', AmlServiceDetailView.as_view(), name='aml-service-detail'),
+
+    # custom status
+    path('custom-status/', CustomStatusListCreateView.as_view(), name='custom-status-list-create'),
+    path('custom-status/<int:pk>/', CustomStatusDetailView.as_view(), name='custom-status-detail'),
     
     # service statistics
     path('service-statistics/', ServiceStatisticsView.as_view(), name='service-statistics'),
