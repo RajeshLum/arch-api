@@ -86,6 +86,26 @@ class TemplateTitleListCreateView(APIView):
 class TemplateTitleDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @staticmethod
+    def normalize_page(page):
+        return {
+            'id': page.get('id'),
+            'page_title': page.get('page_title') or page.get('pageTitle'),
+            'questions': [TemplateTitleDetailView.normalize_question(q) for q in page.get('questions', [])]
+        }
+
+    @staticmethod
+    def normalize_question(q):
+        return {
+            'id': q.get('id'),
+            'question': q.get('question'),
+            'answer_type': q.get('answer_type') or q.get('answerType'),
+            'required': q.get('required'),
+            'description_enabled': q.get('description_enabled') if 'description_enabled' in q else q.get('descriptionEnabled'),
+            'description': q.get('description'),
+            'options': q.get('options')
+        }
+
     def get_template_title(self, pk, user):
         if user.is_staff:
             return get_object_or_404(TemplateTitle, pk=pk)
@@ -98,11 +118,21 @@ class TemplateTitleDetailView(APIView):
 
     @transaction.atomic
     def patch(self, request, pk):
+        return self._update(request, pk, partial=True)
+
+    @transaction.atomic
+    def put(self, request, pk):
+        return self._update(request, pk, partial=False)
+
+    def _update(self, request, pk, partial):
         obj = self.get_template_title(pk, request.user)
         update_data = request.data.copy()
-        pages_data = update_data.pop('pages', [])
-        serializer = TemplateTitleSerializer(obj, data=update_data, partial=True)
+        # Normalize pages/questions to snake_case
+        if 'pages' in update_data:
+            update_data['pages'] = [self.normalize_page(p) for p in update_data['pages']]
+        serializer = TemplateTitleSerializer(obj, data=update_data, partial=partial)
         if serializer.is_valid():
+            pages_data = serializer.validated_data.pop('pages', [])
             template_title = serializer.save()
             existing_pages = {page.id: page for page in template_title.pages.all()}
             sent_page_ids = set()
@@ -158,7 +188,10 @@ class TemplateTitleDetailView(APIView):
                     page.delete()
             result = TemplateTitleSerializer(template_title)
             return Response(result.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # DEBUG: Return serializer errors for diagnosis
+        import logging
+        logging.error(f"TemplateTitleSerializer errors: {serializer.errors}")
+        return Response({"errors": serializer.errors, "data": update_data}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         obj = self.get_template_title(pk, request.user)
