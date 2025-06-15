@@ -23,6 +23,7 @@ from data.views.research_request import ResearchRequestListCreateView, ResearchR
 from data.views.aml_services import AmlServiceListCreateView, AmlServiceDetailView
 from data.views.custom_status import CustomStatusListCreateView, CustomStatusDetailView
 from data.views.template_views import TemplateTitleListCreateView, TemplateTitleDetailView
+from data.views.template_verify import TemplateVerifyView
 
 from data.views.activity_logs import ActivityLogsView
 from data.views.dashboard_statistics import DashboardStatisticsView
@@ -30,6 +31,7 @@ from data.views.search_history import SearchHistoryListCreateView, SearchHistory
 from data.views.service_statistics import ServiceStatisticsView
 
 urlpatterns = [
+    path('template-verify/', TemplateVerifyView.as_view(), name='template-verify'),
     path('match/', MatchEntitiesView.as_view(), name='match-entities'), # post
     path('entities/<str:entity_id>/', EntityDetailView.as_view(), name='entity-detail'), # get
     path('search/', SearchEntitiesView.as_view(), name='search-entities'), # get
