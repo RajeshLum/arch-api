@@ -22,6 +22,7 @@ from data.views.flag_approval import FlagApprovalListCreateView, FlagApprovalDet
 from data.views.research_request import ResearchRequestListCreateView, ResearchRequestDetailView
 from data.views.aml_services import AmlServiceListCreateView, AmlServiceDetailView
 from data.views.custom_status import CustomStatusListCreateView, CustomStatusDetailView
+from data.views.template_views import TemplateTitleListCreateView, TemplateTitleDetailView
 
 from data.views.activity_logs import ActivityLogsView
 from data.views.dashboard_statistics import DashboardStatisticsView
@@ -87,6 +88,10 @@ urlpatterns = [
     # custom status
     path('custom-status/', CustomStatusListCreateView.as_view(), name='custom-status-list-create'),
     path('custom-status/<int:pk>/', CustomStatusDetailView.as_view(), name='custom-status-detail'),
+
+    # template title/pages
+    path('template-titles/', TemplateTitleListCreateView.as_view(), name='template-title-list-create'),
+    path('template-titles/<int:pk>/', TemplateTitleDetailView.as_view(), name='template-title-detail'),
     
     # service statistics
     path('service-statistics/', ServiceStatisticsView.as_view(), name='service-statistics'),

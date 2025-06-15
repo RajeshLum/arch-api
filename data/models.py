@@ -8,6 +8,7 @@ from .amlmodels.flag_approval_models import FlagApproval
 from .amlmodels.research_request_model import ResearchRequest
 from .amlmodels.activity_logs_model import ActivityLogs
 from .amlmodels.search_history_model import SearchHistory
+from .amlmodels.template_models import TemplateTitle, TemplatePage, TemplateQuestion
 
 class SanctionedEntity(models.Model):
     sanctionId = models.TextField(unique=True)
