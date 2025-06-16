@@ -112,6 +112,8 @@ def extract_text_from_nid(image_path):
     text = pytesseract.image_to_string(gray)
     return text
 
+from dateutil import parser as date_parser
+
 def parse_nid_text(text):
     """
     Extract key NID/ID details from OCR text for any country. Tries to be robust to various layouts, languages, and label conventions.
@@ -157,6 +159,13 @@ def parse_nid_text(text):
             dob = match.group(1)
     if dob:
         data['date_of_birth'] = dob
+        # Try to parse date in ISO format
+        try:
+            # Some OCRs may use dots or slashes, so let dateutil handle it
+            dt = date_parser.parse(dob, dayfirst=True, fuzzy=True)
+            data['date_of_birth_parsed'] = dt.strftime('%Y-%m-%d')
+        except Exception:
+            pass
 
     # --- Name ---
     name = None
@@ -167,9 +176,9 @@ def parse_nid_text(text):
             after_colon = re.split(r'[:：]', line, 1)
             if len(after_colon) > 1 and after_colon[1].strip():
                 candidate = after_colon[1].strip()
-                if candidate and not candidate.isupper():
-                    name = candidate
-                    break
+                # Accept even if all uppercase (IDs often have uppercase names)
+                name = candidate
+                break
             elif i+1 < len(lines):
                 candidate = lines[i+1]
                 if candidate and not candidate.isupper():
@@ -337,6 +346,7 @@ def extract_driving_license_info(image_path):
     """Extract all Driving License details from image"""
     raw_text = extract_text_from_driving_license(image_path)
     parsed_text = parse_driving_license_text(raw_text)
+    
     return {
         'Raw OCR Text': raw_text,
         'Parsed Text Data': parsed_text,
