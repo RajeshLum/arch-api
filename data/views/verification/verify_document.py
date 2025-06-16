@@ -144,10 +144,20 @@ class VerificationListCreateView(APIView):
         if isinstance(is_manual_review, str):
             is_manual_review = is_manual_review.lower() in ['true', 'yes', '1']
         
+        import json
+        # Ensure template_answers is always a dict
+        template_answers = request.data.get('template_answers', {})
+        if isinstance(template_answers, str):
+            try:
+                template_answers = json.loads(template_answers)
+            except Exception:
+                template_answers = {}
+
         data = {
             'user': request.user.id,
             'reference_id': reference_id,
             'template_id': request.data.get('template_id', 0),
+            'template_answers': template_answers,
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect

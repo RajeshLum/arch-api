@@ -43,7 +43,7 @@ class TemplateTitleListCreateView(APIView):
             'question': q.get('question'),
             'answer_type': q.get('answer_type') or q.get('answerType'),
             'required': q.get('required'),
-            'description_enabled': q.get('description_enabled') if 'description_enabled' in q else q.get('descriptionEnabled'),
+            'description_enabled': q.get('description_enabled'),
             'description': q.get('description'),
             'options': q.get('options')
         }
@@ -101,7 +101,7 @@ class TemplateTitleDetailView(APIView):
             'question': q.get('question'),
             'answer_type': q.get('answer_type') or q.get('answerType'),
             'required': q.get('required'),
-            'description_enabled': q.get('description_enabled') if 'description_enabled' in q else q.get('descriptionEnabled'),
+            'description_enabled': q.get('description_enabled'),
             'description': q.get('description'),
             'options': q.get('options')
         }
@@ -163,7 +163,7 @@ class TemplateTitleDetailView(APIView):
                         q.answer_type = question_data.get('answerType', question_data.get('answer_type', q.answer_type))
                         q.required = question_data.get('required', q.required)
                         q.options = question_data.get('options', q.options)
-                        q.description_enabled = question_data.get('descriptionEnabled', q.description_enabled)
+                        q.description_enabled = question_data.get('description_enabled', q.description_enabled)
                         q.save()
                         sent_question_ids.add(question_id)
                     else:
@@ -175,7 +175,7 @@ class TemplateTitleDetailView(APIView):
                             answer_type=question_data.get('answerType', question_data.get('answer_type', '')),
                             required=question_data.get('required', False),
                             options=question_data.get('options', None),
-                            description_enabled=question_data.get('descriptionEnabled', False),
+                            description_enabled=question_data.get('description_enabled', False),
                         )
                         sent_question_ids.add(q.id)
                 # Delete removed questions
