@@ -319,27 +319,27 @@ def parse_driving_license_text(text):
     # License Number
     lic_match = re.search(r'(License|DL|Driving Licence|Licence)\s*No\.?\s*[:：]?\s*([A-Z0-9-]+)', text, re.IGNORECASE)
     if lic_match:
-        data['License Number'] = lic_match.group(2).strip()
+        data['license_number'] = lic_match.group(2).strip()
     # Name
     name_match = re.search(r'(Name|Holder)\s*[:：]?\s*([A-Z][a-zA-Z .]+)', text)
     if name_match:
-        data['Name'] = name_match.group(2).strip()
+        data['name'] = name_match.group(2).strip()
     # Date of Birth
     dob_match = re.search(r'(DOB|Date of Birth)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
     if dob_match:
-        data['Date of Birth'] = dob_match.group(2).strip()
+        data['date_of_birth'] = dob_match.group(2).strip()
     # Issue Date
     issue_match = re.search(r'(Issue Date|Issued On)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
     if issue_match:
-        data['Issue Date'] = issue_match.group(2).strip()
+        data['issue_date'] = issue_match.group(2).strip()
     # Expiry Date
     exp_match = re.search(r'(Expir(y|y Date)|Valid Till|Valid Up To)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
     if exp_match:
-        data['Expiry Date'] = exp_match.group(3).strip()
+        data['expiry_date'] = exp_match.group(3).strip()
     # Address (optional, try to grab lines after 'Address')
     addr_match = re.search(r'Address\s*[:：]?\s*(.+)', text, re.IGNORECASE)
     if addr_match:
-        data['Address'] = addr_match.group(1).strip()
+        data['address'] = addr_match.group(1).strip()
     return data
 
 def extract_driving_license_info(image_path):
@@ -347,6 +347,69 @@ def extract_driving_license_info(image_path):
     raw_text = extract_text_from_driving_license(image_path)
     parsed_text = parse_driving_license_text(raw_text)
     
+    return {
+        'Raw OCR Text': raw_text,
+        'Parsed Text Data': parsed_text,
+        'extract_info': parsed_text
+    }
+
+
+def extract_text_from_utility_bill(image_path):
+    """Extract raw text from a utility bill image using pytesseract"""
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Optional: preprocess for better OCR
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    text = pytesseract.image_to_string(gray)
+    return text
+
+
+def parse_utility_bill_text(text):
+    """Extract key utility bill details from OCR text."""
+    import re
+    from dateutil import parser as date_parser
+    data = {}
+    # Bill Number
+    bill_no = re.search(r'(Bill\s*No\.?|Account\s*No\.?|Consumer\s*No\.?|Customer\s*ID)\s*[:：]?\s*([A-Z0-9-]+)', text, re.IGNORECASE)
+    if bill_no:
+        data['bill_number'] = bill_no.group(2).strip()
+    # Name
+    name = re.search(r'(Name|Customer Name|Account Name)\s*[:：]?\s*([A-Z][a-zA-Z .]+)', text)
+    if name:
+        data['name'] = name.group(2).strip()
+    # Address
+    address = re.search(r'(Address|Customer Address)\s*[:：]?\s*(.+)', text)
+    if address:
+        data['address'] = address.group(2).strip()
+    # Billing Date
+    billing_date = re.search(r'(Billing Date|Bill Date|Date of Issue)\s*[:：]?\s*([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}|[0-9]{4}-[0-9]{2}-[0-9]{2})', text, re.IGNORECASE)
+    if billing_date:
+        data['billing_date'] = billing_date.group(2).strip()
+        try:
+            dt = date_parser.parse(billing_date.group(2), dayfirst=True, fuzzy=True)
+            data['billing_date_parsed'] = dt.strftime('%Y-%m-%d')
+        except Exception:
+            pass
+    # Due Date
+    due_date = re.search(r'(Due Date|Pay By|Payment Due)\s*[:：]?\s*([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}|[0-9]{4}-[0-9]{2}-[0-9]{2})', text, re.IGNORECASE)
+    if due_date:
+        data['due_date'] = due_date.group(2).strip()
+        try:
+            dt = date_parser.parse(due_date.group(2), dayfirst=True, fuzzy=True)
+            data['due_date_parsed'] = dt.strftime('%Y-%m-%d')
+        except Exception:
+            pass
+    # Amount
+    amount = re.search(r'(Amount Due|Total Due|Payable Amount|Total Amount)\s*[:：]?\s*([0-9,.]+)', text, re.IGNORECASE)
+    if amount:
+        data['amount'] = amount.group(2).replace(',', '').strip()
+    return data
+
+
+def extract_utility_bill_info(image_path):
+    """Extract all Utility Bill details from image"""
+    raw_text = extract_text_from_utility_bill(image_path)
+    parsed_text = parse_utility_bill_text(raw_text)
     return {
         'Raw OCR Text': raw_text,
         'Parsed Text Data': parsed_text,

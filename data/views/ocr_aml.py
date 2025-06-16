@@ -227,8 +227,12 @@ class PassportOCRLookup(APIView):
                 from data.utils.ocr_details import extract_driving_license_info
                 info = extract_driving_license_info(image_path)
                 response_data = info
+            elif doc_type == 'utility_bill':
+                from data.utils.ocr_details import extract_utility_bill_info
+                info = extract_utility_bill_info(image_path)
+                response_data = info
             else:
-                return Response({'error': 'Invalid type. Supported: passport, nid, driving_license'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Invalid type. Supported: passport, nid, driving_license, utility_bill'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Keep the file in the uploads folder and add the path to the response
             # Ensure image_path uses forward slashes for cross-platform compatibility
