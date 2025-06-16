@@ -119,9 +119,13 @@ class VerificationListCreateView(APIView):
         files = request.FILES.getlist('document')
 
         file_paths = []
+        template_id = request.data.get('template_id')
         for file in files:
             filename = f'{uuid.uuid4()}_{file.name}'
-            path = default_storage.save(f'uploads/document/verifications/{filename}', ContentFile(file.read()))
+            if template_id:
+                path = default_storage.save(f'uploads/document/verifications/investors/template/{template_id}/{filename}', ContentFile(file.read()))
+            else:
+                path = default_storage.save(f'uploads/document/verifications/{filename}', ContentFile(file.read()))
             file_paths.append(path)
 
         # Get user's country code from IP or header
@@ -138,6 +142,7 @@ class VerificationListCreateView(APIView):
         data = {
             'user': request.user.id,
             'reference_id': reference_id,
+            'template_id': request.data.get('template_id', ''),
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
@@ -175,6 +180,8 @@ class VerificationListCreateView(APIView):
                 notes='Verification created with pending status',
                 performed_by=request.user
             )
+            
+            
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -249,6 +249,7 @@ class Verification(models.Model):
     reference_id = models.CharField(max_length=16, unique=True, blank=True, null=True)
     country_id = models.CharField(max_length=20, choices=COUNTRIES, blank=True, null=True)
     service_id = models.IntegerField(default=0)
+    template_id = models.IntegerField(blank=True, null=True)
     customer_id = models.CharField(max_length=20, blank=True, null=True)
     id_type = models.CharField(max_length=20, choices=ID_TYPES, blank=True, null=True)
     is_manual_review = models.BooleanField(default=False, help_text="Indicates if this verification requires manual review")
