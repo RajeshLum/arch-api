@@ -118,8 +118,13 @@ class VerificationListCreateView(APIView):
         
         files = request.FILES.getlist('document')
 
+        import csv
+        from io import StringIO
+        from data.amlmodels.template_models import TemplateTitle
         file_paths = []
         template_id = request.data.get('template_id')
+        service_id = int(request.data.get('service_id', 1))
+        document_rows = []
         for file in files:
             filename = f'{uuid.uuid4()}_{file.name}'
             if template_id:
@@ -181,9 +186,69 @@ class VerificationListCreateView(APIView):
                 performed_by=request.user
             )
             
+            # If service_id == 4, parse the CSV
+            if service_id == 4:
+                file.seek(0)
+                csv_text = file.read().decode('utf-8')
+                reader = csv.DictReader(StringIO(csv_text), fieldnames=["Page Title","Questions","Answer Type","Options"])
+                document_rows = list(reader)
+
+            # If service_id == 4, fetch template info from DB and match questions
+            matched_questions = []
+            all_matched = False
+            if service_id == 4 and template_id:
+                try:
+                    template_obj = TemplateTitle.objects.prefetch_related('pages__questions').get(pk=template_id, user=request.user)
+                    # Build a lookup for document questions
+                    doc_question_map = {row['Questions']: row for row in document_rows}
+                    total_questions = 0
+                    matched_count = 0
+                    for page in template_obj.pages.all():
+                        for q in page.questions.all():
+                            total_questions += 1
+                            q_title = q.question
+                            doc_row = doc_question_map.get(q_title)
+                            if doc_row:
+                                matched_count += 1
+                                matched_questions.append({
+                                    'template_question': {
+                                        'id': q.id,
+                                        'question': q.question,
+                                        'description': q.description,
+                                        'answer_type': q.answer_type,
+                                        'required': q.required,
+                                        'options': q.options,
+                                        'description_enabled': q.description_enabled
+                                    },
+                                    'document_row': doc_row,
+                                    'page_title': page.page_title
+                                })
+                            else:
+                                matched_questions.append({
+                                    'template_question': {
+                                        'id': q.id,
+                                        'question': q.question,
+                                        'description': q.description,
+                                        'answer_type': q.answer_type,
+                                        'required': q.required,
+                                        'options': q.options,
+                                        'description_enabled': q.description_enabled
+                                    },
+                                    'document_row': None,
+                                    'page_title': page.page_title
+                                })
+                    all_matched = (matched_count == total_questions and total_questions > 0)
+                except Exception as e:
+                    # Log or handle the error as needed
+                    print(f"Error fetching or matching template info: {e}")
             
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if service_id == 4:
+                response_data = dict(serializer.data)
+                response_data['matched_questions'] = matched_questions
+                response_data['all_matched'] = all_matched
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
