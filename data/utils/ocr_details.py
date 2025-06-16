@@ -266,3 +266,79 @@ def extract_nid_info(image_path):
         'Parsed Text Data': parsed_text,
         'extract_info': parsed_text
     }
+
+
+def extract_text_from_driving_license(image_path):
+    """Enhanced OCR to extract raw text from a driving license image using pytesseract"""
+    # Read image
+    image = cv2.imread(image_path)
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Resize image to improve OCR accuracy
+    scale_percent = 150  # Upscale by 150%
+    width = int(gray.shape[1] * scale_percent / 100)
+    height = int(gray.shape[0] * scale_percent / 100)
+    resized = cv2.resize(gray, (width, height), interpolation=cv2.INTER_LINEAR)
+
+    # Apply adaptive thresholding for better text segmentation
+    thresh = cv2.adaptiveThreshold(resized, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY, 11, 2)
+
+    # Optional: Denoise
+    denoised = cv2.fastNlMeansDenoising(thresh, h=30)
+
+    # OCR with custom config
+    custom_config = r'--oem 3 --psm 6'  # OEM 3 = default engine, PSM 6 = Assume a single uniform block of text
+    text = pytesseract.image_to_string(denoised, config=custom_config)
+
+    return text
+
+
+def parse_driving_license_text(text):
+    """
+    Extract key driving license details from OCR text. Attempts to extract:
+      - License Number
+      - Name
+      - Date of Birth
+      - Issue Date
+      - Expiry Date
+      - Address (if possible)
+    """
+    data = {}
+    # License Number
+    lic_match = re.search(r'(License|DL|Driving Licence|Licence)\s*No\.?\s*[:：]?\s*([A-Z0-9-]+)', text, re.IGNORECASE)
+    if lic_match:
+        data['License Number'] = lic_match.group(2).strip()
+    # Name
+    name_match = re.search(r'(Name|Holder)\s*[:：]?\s*([A-Z][a-zA-Z .]+)', text)
+    if name_match:
+        data['Name'] = name_match.group(2).strip()
+    # Date of Birth
+    dob_match = re.search(r'(DOB|Date of Birth)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
+    if dob_match:
+        data['Date of Birth'] = dob_match.group(2).strip()
+    # Issue Date
+    issue_match = re.search(r'(Issue Date|Issued On)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
+    if issue_match:
+        data['Issue Date'] = issue_match.group(2).strip()
+    # Expiry Date
+    exp_match = re.search(r'(Expir(y|y Date)|Valid Till|Valid Up To)\s*[:：]?\s*(\d{2}[/-]\d{2}[/-]\d{4})', text, re.IGNORECASE)
+    if exp_match:
+        data['Expiry Date'] = exp_match.group(3).strip()
+    # Address (optional, try to grab lines after 'Address')
+    addr_match = re.search(r'Address\s*[:：]?\s*(.+)', text, re.IGNORECASE)
+    if addr_match:
+        data['Address'] = addr_match.group(1).strip()
+    return data
+
+def extract_driving_license_info(image_path):
+    """Extract all Driving License details from image"""
+    raw_text = extract_text_from_driving_license(image_path)
+    parsed_text = parse_driving_license_text(raw_text)
+    return {
+        'Raw OCR Text': raw_text,
+        'Parsed Text Data': parsed_text,
+        'extract_info': parsed_text
+    }

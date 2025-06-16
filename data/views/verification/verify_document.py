@@ -147,7 +147,7 @@ class VerificationListCreateView(APIView):
         data = {
             'user': request.user.id,
             'reference_id': reference_id,
-            'template_id': request.data.get('template_id', ''),
+            'template_id': request.data.get('template_id', 0),
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
@@ -237,15 +237,28 @@ class VerificationListCreateView(APIView):
                                     'document_row': None,
                                     'page_title': page.page_title
                                 })
+                    
                     all_matched = (matched_count == total_questions and total_questions > 0)
+                    if not all_matched:
+                        verification.status = 'declined'
+                        verification.save(update_fields=['status'])
+                        VerificationTimeline.objects.create(
+                            verification=verification,
+                            status='declined',
+                            action='declined',
+                            notes='Verification declined due to unmatched template questions',
+                            performed_by=request.user
+                        )
                 except Exception as e:
                     # Log or handle the error as needed
                     print(f"Error fetching or matching template info: {e}")
             
             if service_id == 4:
                 response_data = dict(serializer.data)
-                response_data['matched_questions'] = matched_questions
                 response_data['all_matched'] = all_matched
+                if not all_matched:
+                    response_data['status'] = 'declined'
+                    response_data['msg'] = 'Verification declined due to unmatched template questions'
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
