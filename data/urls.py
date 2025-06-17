@@ -31,7 +31,6 @@ from data.views.search_history import SearchHistoryListCreateView, SearchHistory
 from data.views.service_statistics import ServiceStatisticsView
 
 urlpatterns = [
-    path('template-verify/', TemplateVerifyView.as_view(), name='template-verify'),
     path('match/', MatchEntitiesView.as_view(), name='match-entities'), # post
     path('entities/<str:entity_id>/', EntityDetailView.as_view(), name='entity-detail'), # get
     path('search/', SearchEntitiesView.as_view(), name='search-entities'), # get
@@ -94,6 +93,8 @@ urlpatterns = [
     # template title/pages
     path('template-titles/', TemplateTitleListCreateView.as_view(), name='template-title-list-create'),
     path('template-titles/<int:pk>/', TemplateTitleDetailView.as_view(), name='template-title-detail'),
+    
+    path('template-verify/', TemplateVerifyView.as_view(), name='template-verify'),
     
     # service statistics
     path('service-statistics/', ServiceStatisticsView.as_view(), name='service-statistics'),

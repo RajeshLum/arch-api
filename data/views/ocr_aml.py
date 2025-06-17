@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from pprint import pprint
 
 import cv2
@@ -194,8 +195,19 @@ class PassportOCRLookup(APIView):
             upload_dir = os.path.join('media', 'uploads')
             os.makedirs(upload_dir, exist_ok=True)
             
-            # Save the image to media/uploads folder
-            image_path = os.path.join(upload_dir, image.name)
+            # Generate a unique filename with UUID
+            uuid_str = str(uuid.uuid4())
+            short_uuid = uuid_str[:16]
+            
+            # Get file extension
+            original_name = image.name
+            file_ext = os.path.splitext(original_name)[1].lower()
+            
+            # Create new filename with UUID
+            new_filename = f'{short_uuid}_{original_name}'
+            
+            # Save the image to media/uploads folder with the new filename
+            image_path = os.path.join(upload_dir, new_filename)
             with open(image_path, 'wb') as f:
                 for chunk in image.chunks():
                     f.write(chunk)

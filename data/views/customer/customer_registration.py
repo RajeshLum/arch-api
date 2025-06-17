@@ -86,12 +86,18 @@ class CustomerListCreateView(APIView):
         return paginator.get_paginated_response(serializer.data)
     
     def get(self, request):
+        is_flagged = request.query_params.get('is_flagged')
+            
         # Get queryset based on user role, ordered by latest created_at
         if request.user.is_staff:
             queryset = Customer.objects.all().order_by('-created_at')
         else:
             queryset = Customer.objects.filter(user=request.user).order_by('-created_at')
 
+        # Filter by is_flagged if provided
+        if is_flagged:
+            queryset = queryset.filter(is_flagged=is_flagged)
+            
         # Get dynamic page and limit parameters from request
         try:
             page = int(request.query_params.get('page', 1))

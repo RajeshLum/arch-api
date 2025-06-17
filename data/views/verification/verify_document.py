@@ -40,11 +40,19 @@ class VerificationListCreateView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get(self, request):
+        service_id = request.query_params.get('service_id')
+        filter_status = request.query_params.get('status')
         if request.user.is_staff:
             queryset = Verification.objects.all().order_by('-created_at')
         else:
             queryset = Verification.objects.filter(user=request.user).order_by('-created_at')
 
+        # Filter by service_id if provided
+        if service_id:
+            queryset = queryset.filter(service_id=service_id)
+        if filter_status:
+            queryset = queryset.filter(status=filter_status)
+            
         # Get dynamic page and limit parameters from request
         try:
             page = int(request.query_params.get('page', 1))
