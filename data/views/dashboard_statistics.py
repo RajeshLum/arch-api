@@ -26,16 +26,16 @@ class DashboardStatisticsView(APIView):
         """
         try:
             # Count total customers
-            total_customers = Customer.objects.count()
+            total_customers = Customer.objects.filter(user=request.user).count()
             
-            # Count flagged cases
-            flagged_cases = FlagApproval.objects.count()
+            # Count flagged cases for the authenticated user
+            flagged_cases = FlagApproval.objects.filter(user=request.user).count()
             
-            # Get total verifications
-            total_verifications = Verification.objects.count()
+            # Get total verifications for the authenticated user
+            total_verifications = Verification.objects.filter(user=request.user).count()
             
-            # Get latest 10 flagged customers
-            latest_flagged = FlagApproval.objects.select_related('user').order_by('-created_at')[:10]
+            # Get latest 10 flagged customers for the authenticated user
+            latest_flagged = FlagApproval.objects.select_related('user').filter(user=request.user).order_by('-created_at')[:10]
             
             # Format the flagged customers data
             flagged_customers = []
@@ -69,7 +69,7 @@ class DashboardStatisticsView(APIView):
                 })
             
             # Get verification statistics by status
-            verification_stats = Verification.objects.values('status').annotate(count=Count('status')).order_by('status')
+            verification_stats = Verification.objects.filter(user=request.user).values('status').annotate(count=Count('status')).order_by('status')
             
             # Format verification statistics with counts and percentages in a single structure
             verification_by_status = {}
@@ -97,7 +97,7 @@ class DashboardStatisticsView(APIView):
             paginator = PageNumberPagination()
             paginator.page_size = page_size
             
-            verifications = Verification.objects.all().order_by('-created_at')
+            verifications = Verification.objects.filter(user=request.user).order_by('-created_at')
             paginated_verifications = paginator.paginate_queryset(verifications, request)
             
             # Format paginated verifications data
@@ -152,11 +152,12 @@ class DashboardStatisticsView(APIView):
             # For each service, get verification statistics
             for service in services:
                 # Get total verifications for this service
-                total_service_verifications = Verification.objects.filter(service_id=service.id).count()
+                total_service_verifications = Verification.objects.filter(service_id=service.id, user=request.user).count()
                 
-                # Get verifications by status for this service
+                # Get verifications by status for this service and user
                 status_counts = Verification.objects.filter(
-                    service_id=service.id
+                    service_id=service.id,
+                    user=request.user
                 ).values('status').annotate(
                     count=Count('status')
                 ).order_by('status')
@@ -190,6 +191,7 @@ class DashboardStatisticsView(APIView):
             
             # Get monthly flag approval statistics
             monthly_flag_stats = FlagApproval.objects.filter(
+                user=request.user,
                 created_at__gte=start_date,
                 created_at__lte=end_date
             ).annotate(

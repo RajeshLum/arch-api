@@ -15,6 +15,7 @@ from data.models import Verification
 from data.amlmodels.verification_metadata_models import VerificationMetadata
 from data.amlmodels.verification_timeline_models import VerificationTimeline
 from data.amlmodels.customer_models import Customer
+from django.contrib.auth import get_user_model
 from data.amlmodels.aml_services_models import AmlService
 from data.serializers.verification import VerificationSerializer
 from data.serializers.verification_metadata import VerificationMetadataSerializer
@@ -197,7 +198,7 @@ class VerificationListCreateView(APIView):
             )
             
             # If service_id == 4, parse the CSV
-            if service_id == 4:
+            if service_id == 4 and files:
                 file.seek(0)
                 csv_text = file.read().decode('utf-8')
                 reader = csv.DictReader(StringIO(csv_text), fieldnames=["Page Title","Questions","Answer Type","Options"])
@@ -205,8 +206,8 @@ class VerificationListCreateView(APIView):
 
             # If service_id == 4, fetch template info from DB and match questions
             matched_questions = []
-            all_matched = False
-            if service_id == 4 and template_id:
+            all_matched = True
+            if service_id == 4 and template_id and files:
                 try:
                     template_obj = TemplateTitle.objects.prefetch_related('pages__questions').get(pk=template_id, user=request.user)
                     # Build a lookup for document questions
