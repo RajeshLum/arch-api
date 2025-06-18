@@ -7,8 +7,9 @@ from django.contrib.auth.models import User
 class Verification(models.Model):
     ID_TYPES = (
         ('passport', 'Passport'),
-        ('driving_license', "Driver's License"),
         ('nid', 'National ID'),
+        ('driving_license', "Driver's License"),
+        ('utility_bill', "Utility Bill"),
     )
     
     COUNTRIES = (
@@ -253,9 +254,13 @@ class Verification(models.Model):
     template_answers = models.JSONField(blank=True, null=True)
     customer_id = models.CharField(max_length=20, blank=True, null=True)
     id_type = models.CharField(max_length=20, choices=ID_TYPES, blank=True, null=True)
-    is_manual_review = models.BooleanField(default=False, help_text="Indicates if this verification requires manual review")
+    document_number = models.CharField(max_length=100, blank=True, null=True)
+    issue_date = models.DateField(blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
     document = models.JSONField(default=list)
+    is_manual_review = models.BooleanField(default=False, help_text="Indicates if this verification requires manual review")
     status = models.CharField(max_length=50, blank=True)
+    note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

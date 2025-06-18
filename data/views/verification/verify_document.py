@@ -172,7 +172,8 @@ class VerificationListCreateView(APIView):
             'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
             'service_id': request.data.get('service_id', 1),
             'document': request.data.get('document_path', file_paths),
-            'status': 'pending',
+            'status': 'declined',
+            'note': 'Verification process started.',
             'is_manual_review': is_manual_review,
         }
             

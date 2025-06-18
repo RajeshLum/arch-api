@@ -114,7 +114,6 @@ class SearchEntitiesView(APIView):
         countries = [c.lower() for c in request.query_params.getlist("countries[]")]
         entity_types = request.query_params.getlist("entity_types[]")
         registration_number = request.query_params.get("registration_number")
-        
 
         if not query_string:
             return Response(
@@ -142,6 +141,25 @@ class SearchEntitiesView(APIView):
         
         results = []
         screening_models = []
+        
+        # Create VerificationTimeline entry if verification_id is provided
+        if verification_id:
+            try:
+                verification = Verification.objects.get(id=verification_id)
+                # Create first timeline entry for search performed
+                VerificationTimeline.objects.create(
+                    verification=verification,
+                    status='pending',
+                    action='search_performed',
+                    notes=f'Search performed with query: {query_string}',
+                    performed_by=request.user
+                )
+            except Verification.DoesNotExist:
+                # If verification doesn't exist, just continue without creating timeline entry
+                pass
+            except Exception as e:
+                # Log the error but don't interrupt the response
+                print(f"Error creating verification timeline or info: {str(e)}")
 
         for model in models:
             try:
@@ -200,6 +218,17 @@ class SearchEntitiesView(APIView):
 
         results = sorted(results, key=lambda x: x["relevance"], reverse=True)
 
+        # If results are found, update verification note if verification_id is provided
+        if results and verification_id:
+            try:
+                verification_obj = Verification.objects.get(id=verification_id)
+                verification_obj.note = 'Verification information found in Sanction entity'
+                verification_obj.save(update_fields=["note"])
+            except Verification.DoesNotExist:
+                pass
+            except Exception as e:
+                print(f"Error updating verification note: {str(e)}")
+
         # If no results, create a customer from q and dob, but do not return the customer in results
         if not results:
             from data.models import Customer
@@ -213,13 +242,17 @@ class SearchEntitiesView(APIView):
                 "first_name": first_name,
                 "last_name": last_name,
                 "dob": dob,
+                "registration_number": registration_number,
                 "user": request.user.id,
-                "status": "pending"
+                "status": "verified",
+                "verification_id": verification_id
             }
+            
             # Remove dob if not provided
             if not dob:
                 customer_data.pop("dob")
             serializer = CustomerSerializer(data=customer_data)
+            
             if serializer.is_valid():
                 customer_instance = serializer.save(user=request.user)
                 results = []  # Do not return the new customer
@@ -228,21 +261,32 @@ class SearchEntitiesView(APIView):
                     try:
                         verification_obj = Verification.objects.get(id=verification_id)
                         verification_obj.customer_id = customer_instance.id
-                        verification_obj.save(update_fields=["customer_id"])
+                        # Update verification status to verified when no results are found
+                        verification_obj.status = "verified"
+                        verification_obj.note = "Verification has been successfully completed."
+                        verification_obj.save(update_fields=["customer_id", "status", "note"])
                     except Verification.DoesNotExist:
                         pass
             else:
                 return Response({"error": "Customer creation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Create VerificationTimeline entry if verification_id is provided
+        # Create second timeline entry based on search results
         if verification_id:
             try:
-                verification = Verification.objects.get(id=verification_id)
+                if results:
+                    result_message = 'Verification information found in Sanction entity'
+                    result_action = 'sanction_found'
+                    timeline_status = 'declined'
+                else:
+                    result_message = 'No sanction information found. Verification completed successfully.'
+                    result_action = 'verification_completed'
+                    timeline_status = 'verified'
+                    
                 VerificationTimeline.objects.create(
                     verification=verification,
-                    status=verification.status,
-                    action='search_performed',
-                    notes=f'Search performed with query: {query_string}',
+                    status=timeline_status,
+                    action=result_action,
+                    notes=result_message,
                     performed_by=request.user
                 )
                 
