@@ -114,6 +114,7 @@ class SearchEntitiesView(APIView):
         countries = [c.lower() for c in request.query_params.getlist("countries[]")]
         entity_types = request.query_params.getlist("entity_types[]")
         registration_number = request.query_params.get("registration_number")
+        check_family = request.query_params.get("check_family")
 
         if not query_string:
             return Response(
@@ -124,7 +125,9 @@ class SearchEntitiesView(APIView):
         app_config = apps.get_app_config("data")
         models = [
             m for m in app_config.get_models()
-            if m.__module__ == "data.models" and m.__name__ != "BatchUpload" and m.__name__ != "BatchError"
+            if m.__module__ == "data.models" 
+            and m.__name__ != "BatchUpload" and m.__name__ != "BatchError"
+            and (check_family == "true" or m.__name__ != "Family")
         ]
         
         if entity_types:

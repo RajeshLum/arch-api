@@ -57,36 +57,9 @@ def process_bulk_aml_screening(bulk_screening_id):
         
         # Process each record
         processed_records = 0
-        matched_records = 0
-        
-        # Parse countries and models
-        countries = bulk_screening.countries
-        if isinstance(countries, str):
-            try:
-                countries = json.loads(countries)
-            except:
-                countries = []
-                
-        screening_models = bulk_screening.screening_models
-        if isinstance(screening_models, str):
-            try:
-                screening_models = json.loads(screening_models)
-            except:
-                screening_models = []
         
         # Create a search view instance for reuse
         search_view = SearchEntitiesView()
-        
-        # Create result file
-        result_file_path = f'uploads/bulk_aml_screening/results/{bulk_screening.reference_id}_results.csv'
-        result_file = StringIO()
-        result_writer = csv.writer(result_file)
-        
-        # Write header
-        result_writer.writerow([
-            'Full Name', 'Date of Birth', 'Country', 'Status', 
-            'Verification ID', 'Matched Entities', 'Error Message'
-        ])
         
         # Process records in batches to avoid memory issues
         batch_size = 50
@@ -121,15 +94,20 @@ def process_bulk_aml_screening(bulk_screening_id):
                             except:
                                 pass
                         
-                        # Get country
+                        # Get country and convert to list for countries field
                         country = record.get('country', '')
+                        countries_list = [country] if country else []
                         
-                        # Create bulk screening record
+                        # Create bulk screening record with form data
                         aml_record = BulkAmlScreeningRecord.objects.create(
                             bulk_screening=bulk_screening,
                             full_name=full_name,
                             date_of_birth=date_of_birth,
-                            country=country,
+                            countries=countries_list,
+                            screening_models=[],  # Default empty list
+                            is_manual_review=False,  # Default values
+                            decline_on_single_step=False,
+                            check_family=False,
                             status='processing'
                         )
                         
@@ -141,10 +119,10 @@ def process_bulk_aml_screening(bulk_screening_id):
                             user=bulk_screening.user,
                             full_name=full_name,
                             date_of_birth=date_of_birth,
-                            country_id=country,
-                            is_manual_review=bulk_screening.is_manual_review,
-                            decline_on_single_step=bulk_screening.decline_on_single_step,
-                            check_family=bulk_screening.check_family,
+                            country_id=country if country else None,
+                            is_manual_review=aml_record.is_manual_review,
+                            decline_on_single_step=aml_record.decline_on_single_step,
+                            check_family=aml_record.check_family,
                             status='processing',
                             reference_id=reference_id,
                             source='bulk_aml_screening',
@@ -211,7 +189,6 @@ def process_bulk_aml_screening(bulk_screening_id):
                             if results:
                                 aml_record.status = 'matched'
                                 aml_record.matched_entities = results
-                                matched_records += 1
                                 
                                 # Update verification status
                                 verification.status = 'matched'
@@ -261,16 +238,7 @@ def process_bulk_aml_screening(bulk_screening_id):
                                 performed_by=bulk_screening.user
                             )
                         
-                        # Write to result file
-                        result_writer.writerow([
-                            full_name,
-                            date_of_birth.strftime('%Y-%m-%d') if date_of_birth else '',
-                            country,
-                            aml_record.status,
-                            verification.id,
-                            len(results) if 'results' in locals() else 0,
-                            aml_record.error_message or ''
-                        ])
+                        # Record processing completed
                         
                         processed_records += 1
                         
@@ -278,35 +246,37 @@ def process_bulk_aml_screening(bulk_screening_id):
                         # Log error and continue with next record
                         print(f"Error processing record {record.get('full_name', 'Unknown')}: {str(e)}")
                         
-                        # Create error record
+                        # Create error record with default values
                         BulkAmlScreeningRecord.objects.create(
                             bulk_screening=bulk_screening,
                             full_name=record.get('full_name', 'Unknown'),
+                            countries=[],
+                            screening_models=[],
+                            is_manual_review=False,
+                            decline_on_single_step=False,
+                            check_family=False,
                             status='error',
                             error_message=str(e)
                         )
             
             # Update bulk screening progress after each batch
+            # Update only processed_records
             bulk_screening.processed_records = processed_records
-            bulk_screening.matched_records = matched_records
             bulk_screening.save()
         
-        # Save result file
-        default_storage.save(result_file_path, ContentFile(result_file.getvalue()))
+        # No result file to save
         
-        # Update bulk screening record
+        # Update bulk screening record with processed records and set status to completed
         bulk_screening.processed_records = processed_records
-        bulk_screening.matched_records = matched_records
         bulk_screening.status = 'completed'
-        bulk_screening.result_file_path = result_file_path
         bulk_screening.save()
         
     except Exception as e:
         # Update bulk screening record with error
         try:
             bulk_screening = BulkAmlScreening.objects.get(id=bulk_screening_id)
-            bulk_screening.status = 'failed'
             bulk_screening.error_message = str(e)
+            bulk_screening.status = 'failed'
             bulk_screening.save()
         except:
             pass

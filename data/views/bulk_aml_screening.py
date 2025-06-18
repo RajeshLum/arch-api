@@ -83,18 +83,14 @@ class BulkAmlScreeningView(APIView):
             except Exception as e:
                 return Response({"error": f"Error parsing file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create bulk screening record
+            # Create bulk screening record - only store file metadata
             bulk_screening = BulkAmlScreening.objects.create(
                 user=request.user,
                 file_name=file_name,
                 file_path=file_path,
                 total_records=total_records,
-                countries=countries,
-                screening_models=screening_models,
-                is_manual_review=is_manual_review,
-                decline_on_single_step=decline_on_single_step,
-                check_family=check_family,
-                status='pending'
+                processed_records=0,
+                status='pending'  # Set initial status
             )
             
             # Start processing task asynchronously
@@ -161,10 +157,7 @@ class BulkAmlScreeningHistoryView(APIView):
                     "uploadDate": item.created_at,
                     "totalRecords": item.total_records,
                     "processedRecords": item.processed_records,
-                    "matchedRecords": item.matched_records,
                     "status": item.status,
-                    "countries": item.countries,
-                    "screening_models": item.screening_models,
                     "updated_at": item.updated_at
                 })
             
@@ -239,45 +232,34 @@ class BulkAmlScreeningDetailView(APIView):
                     except Verification.DoesNotExist:
                         pass
                 
-                # Format matched entities for display
-                matched_entities_data = []
-                if record.matched_entities and isinstance(record.matched_entities, list):
-                    for entity in record.matched_entities:
-                        if isinstance(entity, dict):
-                            entity_data = {
-                                "name": entity.get("name", ""),
-                                "score": entity.get("score", 0),
-                                "entity_type": entity.get("entity_type", ""),
-                                "country": entity.get("country", ""),
-                            }
-                            matched_entities_data.append(entity_data)
+                # Format countries for display
+                countries_data = []
+                if record.countries and isinstance(record.countries, list):
+                    countries_data = record.countries
                 
                 records_data.append({
                     "id": record.id,
                     "full_name": record.full_name,
                     "date_of_birth": record.date_of_birth,
-                    "country": record.country,
+                    "countries": countries_data,
+                    "screening_models": record.screening_models,
+                    "is_manual_review": record.is_manual_review,
+                    "decline_on_single_step": record.decline_on_single_step,
+                    "check_family": record.check_family,
                     "status": record.status,
                     "verification": verification_info,
-                    "matched_entities": matched_entities_data,
                     "error_message": record.error_message,
                     "created_at": record.created_at
                 })
             
-            # Prepare bulk screening data
+            # Get bulk screening data
             bulk_data = {
                 "id": bulk_screening.id,
                 "reference_id": bulk_screening.reference_id,
                 "file_name": bulk_screening.file_name,
                 "total_records": bulk_screening.total_records,
                 "processed_records": bulk_screening.processed_records,
-                "matched_records": bulk_screening.matched_records,
-                "status": bulk_screening.status,
-                "countries": bulk_screening.countries,
-                "screening_models": bulk_screening.models,
-                "is_manual_review": bulk_screening.is_manual_review,
-                "decline_on_single_step": bulk_screening.decline_on_single_step,
-                "check_family": bulk_screening.check_family,
+                "status": bulk_screening.status,  # Use actual status from model
                 "error_message": bulk_screening.error_message,
                 "created_at": bulk_screening.created_at,
                 "updated_at": bulk_screening.updated_at
@@ -295,74 +277,6 @@ class BulkAmlScreeningDetailView(APIView):
                     }
                 }
             }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class BulkAmlScreeningDownloadView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, bulk_id):
-        """
-        Download bulk AML screening results as CSV
-        """
-        try:
-            # Get the bulk screening record
-            try:
-                # Filter by user unless admin
-                if request.user.is_staff:
-                    bulk_screening = BulkAmlScreening.objects.get(id=bulk_id)
-                else:
-                    bulk_screening = BulkAmlScreening.objects.get(id=bulk_id, user=request.user)
-            except BulkAmlScreening.DoesNotExist:
-                return Response({"error": "Bulk AML screening not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-            # Check if processing is complete
-            if bulk_screening.status not in ['completed', 'failed']:
-                return Response({"error": "Bulk AML screening is still processing"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Create a new CSV file with results
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="{bulk_screening.reference_id}_results.csv"'
-            
-            writer = csv.writer(response)
-            writer.writerow([
-                'Full Name', 'Date of Birth', 'Country', 'Status', 
-                'Verification ID', 'Verification Status', 'Matched Entities', 'Error Message'
-            ])
-            
-            # Get all records for this bulk screening
-            records = BulkAmlScreeningRecord.objects.filter(bulk_screening=bulk_screening).order_by('id')
-            
-            for record in records:
-                # Get verification status if available
-                verification_status = ''
-                if record.verification_id:
-                    try:
-                        verification = Verification.objects.get(id=record.verification_id)
-                        verification_status = verification.status
-                    except Verification.DoesNotExist:
-                        pass
-                
-                # Count matched entities
-                matched_count = 0
-                if record.matched_entities and isinstance(record.matched_entities, list):
-                    matched_count = len(record.matched_entities)
-                
-                writer.writerow([
-                    record.full_name,
-                    record.date_of_birth.strftime('%Y-%m-%d') if record.date_of_birth else '',
-                    record.country,
-                    record.status,
-                    record.verification_id or '',
-                    verification_status,
-                    matched_count,
-                    record.error_message or ''
-                ])
-            
-            return response
             
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
