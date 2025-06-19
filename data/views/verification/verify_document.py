@@ -180,6 +180,18 @@ class VerificationListCreateView(APIView):
         serializer = VerificationSerializer(data=data)
         if serializer.is_valid():
             verification = serializer.save(user=request.user)
+
+            # Bulk AML integration: update BulkAmlScreeningRecord if bulk_aml_record_id is present
+            bulk_aml_record_id = request.data.get('bulk_aml_record_id')
+            if bulk_aml_record_id:
+                try:
+                    from data.amlmodels.bulk_aml_screening_models import BulkAmlScreeningRecord
+                    record = BulkAmlScreeningRecord.objects.get(id=bulk_aml_record_id)
+                    record.verification_id = verification.id
+                    record.status = 'completed'
+                    record.save(update_fields=['verification_id', 'status', 'updated_at'])
+                except Exception as e:
+                    print(f"Error updating BulkAmlScreeningRecord: {e}")
             
             # Store user IP and browser information
             ip_address = get_client_ip(request)

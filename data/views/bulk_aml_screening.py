@@ -58,15 +58,6 @@ class BulkAmlScreeningView(APIView):
             saved_file_name = f"{short_uuid}_{file_name}"
             file_path = default_storage.save(f'uploads/bulk_aml_screening/{saved_file_name}', ContentFile(file.read()))
             
-            # Parse countries and models from request
-            countries = request.data.get('countries', '[]')
-            screening_models = request.data.get('screening_models', '[]')
-            
-            # Parse additional options
-            is_manual_review = request.data.get('is_manual_review', 'false').lower() in ['true', 'yes', '1']
-            decline_on_single_step = request.data.get('decline_on_single_step', 'false').lower() in ['true', 'yes', '1']
-            check_family = request.data.get('check_family', 'false').lower() in ['true', 'yes', '1']
-            
             # Count total records in the file
             total_records = 0
             try:
@@ -96,7 +87,7 @@ class BulkAmlScreeningView(APIView):
             # Start processing task asynchronously
             # In a production environment, this would be handled by Celery or similar
             # For now, we'll process it synchronously
-            process_bulk_aml_screening(bulk_screening.id)
+            process_bulk_aml_screening(bulk_screening.id, request)
             
             return Response({
                 "message": "File uploaded successfully",
@@ -247,6 +238,7 @@ class BulkAmlScreeningDetailView(APIView):
                     "decline_on_single_step": record.decline_on_single_step,
                     "check_family": record.check_family,
                     "status": record.status,
+                    "verification_id": record.verification_id,
                     "verification": verification_info,
                     "error_message": record.error_message,
                     "created_at": record.created_at

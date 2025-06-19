@@ -18,9 +18,11 @@ from data.amlmodels.verification_timeline_models import VerificationTimeline
 from data.utils.reference_generator import generate_reference_id
 from data.utils.geolocation import get_user_country
 from data.views.search_entities import SearchEntitiesView
+from rest_framework.test import APIRequestFactory
+from data.views.verification.verify_document import VerificationListCreateView
 
 
-def process_bulk_aml_screening(bulk_screening_id):
+def process_bulk_aml_screening(bulk_screening_id, request):
     """
     Process a bulk AML screening file
     This would typically be a Celery task in production
@@ -55,6 +57,15 @@ def process_bulk_aml_screening(bulk_screening_id):
             bulk_screening.save()
             return
         
+        # Parse countries and models from request
+        countries = request.data.get('countries', '[]')
+        screening_models = request.data.get('screening_models', '[]')
+        
+        # Parse additional options
+        is_manual_review = request.data.get('is_manual_review', 'false').lower() in ['true', 'yes', '1']
+        decline_on_single_step = request.data.get('decline_on_single_step', 'false').lower() in ['true', 'yes', '1']
+        check_family = request.data.get('check_family', 'false').lower() in ['true', 'yes', '1']
+            
         # Process each record
         processed_records = 0
         
@@ -99,168 +110,67 @@ def process_bulk_aml_screening(bulk_screening_id):
                         countries_list = [country] if country else []
                         
                         # Create bulk screening record with form data
+                        record_data = {
+                            "full_name": full_name,
+                            "date_of_birth": date_of_birth,
+                            "countries": countries,
+                            "screening_models": screening_models,
+                            "is_manual_review": is_manual_review,
+                            "decline_on_single_step": decline_on_single_step,
+                            "check_family": check_family,
+                            "status": "pending"
+                        }
+
                         aml_record = BulkAmlScreeningRecord.objects.create(
                             bulk_screening=bulk_screening,
-                            full_name=full_name,
-                            date_of_birth=date_of_birth,
-                            countries=countries_list,
-                            screening_models=[],  # Default empty list
-                            is_manual_review=False,  # Default values
-                            decline_on_single_step=False,
-                            check_family=False,
-                            status='processing'
+                            **record_data
                         )
                         
-                        # Generate a unique reference ID for the verification
-                        reference_id = generate_reference_id()
-                        
-                        # Create verification record - similar to VerificationListCreateView.post
-                        verification = Verification.objects.create(
-                            user=bulk_screening.user,
-                            full_name=full_name,
-                            date_of_birth=date_of_birth,
-                            country_id=country if country else None,
-                            is_manual_review=aml_record.is_manual_review,
-                            decline_on_single_step=aml_record.decline_on_single_step,
-                            check_family=aml_record.check_family,
-                            status='processing',
-                            reference_id=reference_id,
-                            source='bulk_aml_screening',
-                            source_reference=f"{bulk_screening.reference_id}:{aml_record.id}"
-                        )
-                        
-                        # Create verification timeline entry
-                        VerificationTimeline.objects.create(
-                            verification=verification,
-                            status='processing',
-                            action='created',
-                            notes=f'Created from bulk AML screening {bulk_screening.reference_id}',
-                            performed_by=bulk_screening.user
-                        )
-                        
-                        # Update AML record with verification ID
-                        aml_record.verification_id = verification.id
-                        aml_record.save()
-                        
-                        # Create a mock request class for the search view
-                        class MockRequest:
-                            def __init__(self, user, query_params):
-                                self.user = user
-                                self.query_params = query_params
-                            
-                            def get(self, key, default=None):
-                                return self.query_params.get(key, default)
-                            
-                            def getlist(self, key):
-                                val = self.query_params.get(key)
-                                if not isinstance(val, list):
-                                    return [val]
-                                return val
-                        
-                        # Build query params - similar to how SearchEntitiesView is called
-                        query_params = {
-                            'q': full_name,
-                            'verification_id': verification.id,
-                            'limit': 100
+                        verify_data = {
+                            **record_data,
+                            "service_id": 1,
+                            "bulk_aml_record_id": aml_record.id
                         }
                         
-                        # Add countries if specified
-                        if countries:
-                            query_params['countries[]'] = [c.get('value') for c in countries if isinstance(c, dict) and 'value' in c]
+                        # Call VerificationListCreateView.post as internal API
+                        factory = APIRequestFactory()
+                        request_api = factory.post('/api/verification/', verify_data, format='json')
+                        request_api.user = bulk_screening.user
+                        request_api._force_auth_user = bulk_screening.user
+                        request_api._authenticated = True
+                        view = VerificationListCreateView.as_view()
+                        response = view(request_api)
+                        # Optionally, handle response.data or errors
                         
-                        # Add entity types (screening_models) if specified
-                        if screening_models:
-                            query_params['entity_types[]'] = [m.get('value') for m in screening_models if isinstance(m, dict) and 'value' in m]
-                        
-                        # Add DOB if available
-                        if date_of_birth:
-                            query_params['dob'] = date_of_birth.strftime('%Y-%m-%d')
-                        
-                        # Create mock request
-                        mock_request = MockRequest(bulk_screening.user, query_params)
-                        
-                        # Call search method - this will create VerificationInfo records automatically
-                        try:
-                            response = search_view.get(mock_request)
-                            
-                            # Check if any matches were found
-                            results = response.data.get('results', [])
-                            
-                            if results:
-                                aml_record.status = 'matched'
-                                aml_record.matched_entities = results
-                                
-                                # Update verification status
-                                verification.status = 'matched'
-                                verification.save()
-                                
-                                # Add timeline entry for match
-                                VerificationTimeline.objects.create(
-                                    verification=verification,
-                                    status='matched',
-                                    action='aml_check',
-                                    notes=f'Found {len(results)} potential matches',
-                                    performed_by=bulk_screening.user
-                                )
-                            else:
-                                aml_record.status = 'not_matched'
-                                
-                                # Update verification status
-                                verification.status = 'completed'
-                                verification.save()
-                                
-                                # Add timeline entry for no match
-                                VerificationTimeline.objects.create(
-                                    verification=verification,
-                                    status='completed',
-                                    action='aml_check',
-                                    notes='No matches found',
-                                    performed_by=bulk_screening.user
-                                )
-                            
-                            aml_record.save()
-                            
-                        except Exception as e:
-                            aml_record.status = 'error'
-                            aml_record.error_message = str(e)
-                            aml_record.save()
-                            
-                            # Update verification status
-                            verification.status = 'error'
-                            verification.save()
-                            
-                            # Add timeline entry for error
-                            VerificationTimeline.objects.create(
-                                verification=verification,
-                                status='error',
-                                action='aml_check',
-                                notes=f'Error during screening: {str(e)}',
-                                performed_by=bulk_screening.user
-                            )
-                        
+                        verification_id = response.data.get('id')
+                        search_data = {
+                            **verify_data,
+                            "q": full_name
+                        }
+                        if verification_id is not None:
+                            search_data["verification_id"] = verification_id
+
+                        # --- Call SearchEntitiesView.get as internal API ---
+                        if verification_id is not None:
+                            factory_search = APIRequestFactory()
+                            request_search = factory_search.get('/api/search-entities/', search_data)
+                            request_search.user = bulk_screening.user
+                            request_search._force_auth_user = bulk_screening.user
+                            request_search._authenticated = True
+                            search_view = SearchEntitiesView.as_view()
+                            search_response = search_view(request_search)
+                            print('search_response>>>')
+                            print(search_response)
+                        # --- End internal API call ---
+
                         # Record processing completed
-                        
                         processed_records += 1
                         
                     except Exception as e:
                         # Log error and continue with next record
                         print(f"Error processing record {record.get('full_name', 'Unknown')}: {str(e)}")
                         
-                        # Create error record with default values
-                        BulkAmlScreeningRecord.objects.create(
-                            bulk_screening=bulk_screening,
-                            full_name=record.get('full_name', 'Unknown'),
-                            countries=[],
-                            screening_models=[],
-                            is_manual_review=False,
-                            decline_on_single_step=False,
-                            check_family=False,
-                            status='error',
-                            error_message=str(e)
-                        )
-            
             # Update bulk screening progress after each batch
-            # Update only processed_records
             bulk_screening.processed_records = processed_records
             bulk_screening.save()
         
