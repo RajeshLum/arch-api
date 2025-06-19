@@ -30,6 +30,7 @@ from data.views.dashboard_statistics import DashboardStatisticsView
 from data.views.search_history import SearchHistoryListCreateView, SearchHistoryDetailView, SearchHistoryClearView, RecentSearchHistoryView
 from data.views.service_statistics import ServiceStatisticsView
 from data.views.bulk_aml_screening import BulkAmlScreeningView, BulkAmlScreeningHistoryView, BulkAmlScreeningDetailView
+from data.views.bulk_aml_file_download import BulkAmlScreeningFileDownloadView
 
 urlpatterns = [
     path('match/', MatchEntitiesView.as_view(), name='match-entities'), # post
@@ -107,4 +108,5 @@ urlpatterns = [
     path('bulk-aml-screening/', BulkAmlScreeningView.as_view(), name='bulk-aml-screening'),
     path('bulk-aml-screening/history/', BulkAmlScreeningHistoryView.as_view(), name='bulk-aml-screening-history'),
     path('bulk-aml-screening/<int:bulk_id>/', BulkAmlScreeningDetailView.as_view(), name='bulk-aml-screening-detail'),
+    path('bulk-aml-screening/download-file/', BulkAmlScreeningFileDownloadView.as_view(), name='bulk-aml-screening-file-download'),
 ]

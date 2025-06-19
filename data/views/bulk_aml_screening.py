@@ -9,8 +9,9 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.utils import timezone
+import mimetypes
 
 from rest_framework import status
 from rest_framework.views import APIView
