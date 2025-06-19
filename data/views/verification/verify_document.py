@@ -60,7 +60,7 @@ class VerificationListCreateView(APIView):
             page = 1
             
         try:
-            page_size = int(request.query_params.get('limit', 20))
+            page_size = int(request.query_params.get('page_size', 20))
             # Cap page size to reasonable limits
             page_size = min(max(page_size, 1), 100)  # Between 1 and 100
         except (TypeError, ValueError):
@@ -313,6 +313,15 @@ class VerificationDetailView(APIView):
         """Retrieve a specific verification with its metadata and timeline"""
         verification = self.get_verification(pk, request.user)
         verification_data = VerificationSerializer(verification).data
+        
+        # Get service name if service_id is available
+        if verification.service_id:
+            try:
+                service = AmlService.objects.filter(id=verification.service_id).first()
+                if service:
+                    verification_data['service_name'] = service.service_name
+            except Exception:
+                verification_data['service_name'] = ""
         
         # Get metadata if it exists
         try:

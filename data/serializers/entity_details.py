@@ -38,6 +38,7 @@ class EntityDetailSerializer:
             "name": self.entity.caption,
             "attributes": {
                 "schema": self.serialize_field(self.entity.schema),
+                "datasets": self.serialize_field(self.entity.datasets),
                 "first_seen": self.serialize_field(self.entity.first_seen),
                 "last_seen": self.serialize_field(self.entity.last_seen),
                 "last_change": self.serialize_field(self.entity.last_change),
