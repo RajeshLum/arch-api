@@ -165,16 +165,23 @@ class VerificationListCreateView(APIView):
         data = {
             'user': request.user.id,
             'reference_id': reference_id,
-            'template_id': request.data.get('template_id', 0),
-            'template_answers': template_answers,
+            'service_id': request.data.get('service_id', 1),
+            'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
             'customer_id': request.data.get('customer_id', ''),
             'id_type': request.data.get('id_type', ''),
-            'country_id': request.data.get('country_id', country_code),  # Use provided country or auto-detect
-            'service_id': request.data.get('service_id', 1),
+            'registration_number': request.data.get('registration_number', ''),
+            'tax_number': request.data.get('tax_number', ''),
+            'vat_code': request.data.get('vat_code', ''),
+            'id_type': request.data.get('id_type', ''),
+            'document_number': request.data.get('document_number', ''),
+            'issue_date': request.data.get('issue_date') or None,
+            'expiry_date': request.data.get('expiry_date') or None,
             'document': request.data.get('document_path', file_paths),
+            'template_id': request.data.get('template_id') or None,
+            'template_answers': template_answers,
+            'is_manual_review': is_manual_review,
             'status': 'declined',
             'note': 'Verification process started.',
-            'is_manual_review': is_manual_review,
         }
             
         serializer = VerificationSerializer(data=data)
