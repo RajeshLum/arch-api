@@ -232,8 +232,9 @@ class SearchEntitiesView(APIView):
             except Exception as e:
                 print(f"Error updating verification note: {str(e)}")
 
-        # If no results, create a customer from q and dob, but do not return the customer in results
-        if not results:
+        # If email is present, create or update a customer (by email, unique)
+        email = request.query_params.get("email")
+        if email:
             from data.models import Customer
             from data.serializers.customer import CustomerSerializer
             q = query_string
@@ -244,34 +245,40 @@ class SearchEntitiesView(APIView):
             customer_data = {
                 "first_name": first_name,
                 "last_name": last_name,
+                "email": email,
                 "dob": dob,
-                "registration_number": registration_number,
                 "user": request.user.id,
                 "status": "verified",
                 "verification_id": verification_id
             }
-            
-            # Remove dob if not provided
             if not dob:
                 customer_data.pop("dob")
-            serializer = CustomerSerializer(data=customer_data)
-            
-            if serializer.is_valid():
-                customer_instance = serializer.save(user=request.user)
-                results = []  # Do not return the new customer
-                # Update Verification.customer_id if verification_id is provided
-                if verification_id:
-                    try:
-                        verification_obj = Verification.objects.get(id=verification_id)
-                        verification_obj.customer_id = customer_instance.id
-                        # Update verification status to verified when no results are found
-                        verification_obj.status = "verified"
-                        verification_obj.note = "Verification has been successfully completed."
-                        verification_obj.save(update_fields=["customer_id", "status", "note"])
-                    except Verification.DoesNotExist:
-                        pass
+            # Try to get existing customer by email
+            customer_instance = Customer.objects.filter(email=email).first()
+            if customer_instance:
+                customer_instance.updated_at = datetime.now()
+                # Increment attempts
+                if results:
+                    customer_instance.failed_attempts = (customer_instance.failed_attempts or 0) + 1
+                else:
+                    customer_instance.success_attempts = (customer_instance.success_attempts or 0) + 1
+                customer_instance.save(update_fields=["updated_at", "success_attempts", "failed_attempts"])
             else:
-                return Response({"error": "Customer creation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                serializer = CustomerSerializer(data=customer_data)
+                if serializer.is_valid():
+                    customer_instance = serializer.save(user=request.user)
+                    # Update Verification.customer_id if verification_id is provided
+                    if verification_id:
+                        try:
+                            verification_obj = Verification.objects.get(id=verification_id)
+                            verification_obj.customer_id = customer_instance.id
+                            verification_obj.status = "verified"
+                            verification_obj.note = "Verification has been successfully completed."
+                            verification_obj.save(update_fields=["customer_id", "status", "note"])
+                        except Verification.DoesNotExist:
+                            pass
+                else:
+                    return Response({"error": "Customer creation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
         # Create second timeline entry based on search results
         if verification_id:

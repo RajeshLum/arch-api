@@ -30,8 +30,6 @@ class Customer(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
     nationality = models.CharField(max_length=20, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
-    registration_number = models.CharField(max_length=50, blank=True, null=True)
-    tax_id = models.CharField(max_length=20, blank=True, null=True)
     photo = models.ImageField(upload_to=customer_photo_path, blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, null=True)
     is_flagged = models.BooleanField(default=False)

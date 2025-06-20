@@ -3042,7 +3042,7 @@ class ProfileAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ("id", "first_name", "last_name", "email", "phone", "dob", "gender", 
-                    "nationality", "address", "tax_id", "photo", 'status', 
+                    "nationality", "address", "photo", 'status', 
                     'created_at', 'updated_at')
     
 @admin.register(Identity)
