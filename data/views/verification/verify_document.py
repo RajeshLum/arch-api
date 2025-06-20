@@ -134,12 +134,15 @@ class VerificationListCreateView(APIView):
         template_id = request.data.get('template_id')
         service_id = int(request.data.get('service_id', 1))
         document_rows = []
+        import datetime
         for file in files:
-            filename = f'{uuid.uuid4()}_{file.name}'
+            today_str = datetime.datetime.now().strftime('%Y%m%d')
+            random_str = generate_reference_id(16)
+            filename = f'{random_str}_{file.name}'
             if template_id:
-                path = default_storage.save(f'uploads/document/verifications/investors/template/{template_id}/{filename}', ContentFile(file.read()))
+                path = default_storage.save(f'uploads/verifications/investors/template/{template_id}/{filename}', ContentFile(file.read()))
             else:
-                path = default_storage.save(f'uploads/document/verifications/{filename}', ContentFile(file.read()))
+                path = default_storage.save(f'uploads/verifications/{today_str}/{filename}', ContentFile(file.read()))
             file_paths.append(path)
 
         # Get user's country code from IP or header
@@ -298,6 +301,55 @@ class VerificationListCreateView(APIView):
                 if not all_matched:
                     response_data['status'] = 'declined'
                     response_data['msg'] = 'Verification declined due to unmatched template questions'
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            elif service_id == 3:
+                response_data = dict(serializer.data)
+                extract_data = None
+                kyb_files = request.FILES.getlist('document')
+                if kyb_files:
+                    import PyPDF2
+                    from io import BytesIO
+                    extract_data = []
+                    for pdf_file in kyb_files:
+                        try:
+                            pdf_file.seek(0)
+                            pdf_reader = PyPDF2.PdfReader(BytesIO(pdf_file.read()))
+                            text = ""
+                            import re
+                            registration_number = None
+                            tin_number = None
+                            vat_number = None
+                            license_number = None
+                            for i, page in enumerate(pdf_reader.pages):
+                                page_text = page.extract_text()
+                                if not page_text or not page_text.strip():
+                                    page_text = f"[No extractable text on page {i+1} (may be scanned image)]"
+                                text += page_text + "\n"
+                            # Try to extract registration, TIN, VAT, and license numbers
+                            reg_match = re.search(r'(registration number|reg[ ._-]?no[ .:-]?|company number)[:\s]*([A-Za-z0-9\-/]+)', text, re.IGNORECASE)
+                            tin_match = re.search(r'(tin number|tax identification number|tax no[ .:-]?|tin)[:\s]*([A-Za-z0-9\-/]+)', text, re.IGNORECASE)
+                            vat_match = re.search(r'(vat number|vat code|vat no[ .:-]?|vat)[:\s]*([A-Za-z0-9\-/]+)', text, re.IGNORECASE)
+                            license_match = re.search(r'(license number|licence number|license no[ .:-]?|licence no[ .:-]?|license)[:\s]*([A-Za-z0-9\-/]+)', text, re.IGNORECASE)
+                            if reg_match:
+                                registration_number = reg_match.group(2)
+                            if tin_match:
+                                tin_number = tin_match.group(2)
+                            if vat_match:
+                                vat_number = vat_match.group(2)
+                            if license_match:
+                                license_number = license_match.group(2)
+                            extract_data.append({
+                                "filename": pdf_file.name,
+                                "parsed_text": text.strip(),
+                                "registration_number_extracted": registration_number,
+                                "tin_number_extracted": tin_number,
+                                "vat_number_extracted": vat_number,
+                                "license_number_extracted": license_number
+                            })
+                        except Exception as e:
+                            extract_data.append({"filename": pdf_file.name, "error": str(e)})
+                if extract_data:
+                    response_data['extract_data'] = extract_data
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
