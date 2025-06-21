@@ -114,6 +114,8 @@ class SearchEntitiesView(APIView):
         countries = [c.lower() for c in request.query_params.getlist("countries[]")]
         entity_types = request.query_params.getlist("entity_types[]")
         registration_number = request.query_params.get("registration_number")
+        tax_number = request.query_params.get("tax_number")
+        vat_code = request.query_params.get("vat_code")
         check_family = request.query_params.get("check_family")
 
         if not query_string:
@@ -187,7 +189,21 @@ class SearchEntitiesView(APIView):
 
                 if registration_number:
                     # Cast registrationNumber to string for comparison
-                    filters.append(Q(**{'registrationNumber__icontains': str(registration_number)}) | Q(**{'registrationNumber__isnull': False}) & Q(**{'registrationNumber__in': [registration_number, str(registration_number)]}))
+                    filters.append(Q(**{'registrationNumber__icontains': str(registration_number)}) | 
+                                   Q(**{'registrationNumber__isnull': False}) & 
+                                   Q(**{'registrationNumber__in': [registration_number, str(registration_number)]}))
+                    
+                if tax_number:
+                    # Cast taxNumber to string for comparison
+                    filters.append(Q(**{'taxNumber__icontains': str(tax_number)}) | 
+                                   Q(**{'taxNumber__isnull': False}) & 
+                                   Q(**{'taxNumber__in': [tax_number, str(tax_number)]}))
+                    
+                if vat_code:
+                    # Cast vatCode to string for comparison
+                    filters.append(Q(**{'vatCode__icontains': str(vat_code)}) | 
+                                   Q(**{'vatCode__isnull': False}) & 
+                                   Q(**{'vatCode__in': [vat_code, str(vat_code)]}))
 
                 combined_query = reduce(operator.or_, search_fields)
          

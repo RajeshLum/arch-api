@@ -182,7 +182,7 @@ class VerificationListCreateView(APIView):
             'document': request.data.get('document_path', file_paths),
             'template_id': request.data.get('template_id') or None,
             'template_answers': template_answers,
-            'is_manual_review': is_manual_review,
+            'extract_data': request.data.get('extract_data', ''),
             'status': 'declined',
             'note': 'Verification process started.',
         }

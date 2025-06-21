@@ -191,20 +191,23 @@ class PassportOCRLookup(APIView):
         if serializer.is_valid():
             image = request.FILES['image']
             
+            import datetime
+            from django.core.files.base import ContentFile
+            from django.core.files.storage import default_storage
+
+            today_str = datetime.datetime.now().strftime('%Y%m%d')
+            random_str = str(uuid.uuid4())[:16]
+            new_filename = f'{random_str}_{image.name}'
+            # Save file using default_storage, similar to verify_document.py
+            temp_path = default_storage.save(f'uploads/verifications/idv/{today_str}/{new_filename}', ContentFile(image.read()))
+            
             # Create uploads directory if it doesn't exist
             upload_dir = os.path.join('media', 'uploads')
             os.makedirs(upload_dir, exist_ok=True)
             
-            # Generate a unique filename with UUID
-            uuid_str = str(uuid.uuid4())
-            short_uuid = uuid_str[:16]
-            
             # Get file extension
             original_name = image.name
             file_ext = os.path.splitext(original_name)[1].lower()
-            
-            # Create new filename with UUID
-            new_filename = f'{short_uuid}_{original_name}'
             
             # Save the image to media/uploads folder with the new filename
             image_path = os.path.join(upload_dir, new_filename)

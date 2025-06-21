@@ -10,6 +10,7 @@ class Verification(models.Model):
         ('nid', 'National ID'),
         ('driving_license', "Driver's License"),
         ('utility_bill', "Utility Bill"),
+        ('kyb_document', 'Kyb Document'),
     )
     
     COUNTRIES = (
@@ -264,6 +265,7 @@ class Verification(models.Model):
     is_manual_review = models.BooleanField(default=False, help_text="Indicates if this verification requires manual review")
     status = models.CharField(max_length=50, blank=True)
     note = models.TextField(blank=True, null=True)
+    extract_data = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

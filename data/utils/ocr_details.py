@@ -97,6 +97,7 @@ def extract_passport_info(image_path):
     mrz_data = extract_mrz_data(image_path)
 
     return {
+        'image_path': image_path,
         'Raw OCR Text': raw_text,
         'Parsed Text Data': parsed_text,
         'MRZ Data': mrz_data,
